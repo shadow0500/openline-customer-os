@@ -1,0 +1,6 @@
+query  getContactsSuggestions($value: Any!) {
+            contacts( where: {OR: [{filter: {property: "FIRST_NAME", value: $value, operation: CONTAINS }}, {filter: {property: "LAST_NAME", value: $value, operation: CONTAINS }}]})
+            {
+                content{id, firstName, lastName, phoneNumbers{e164}}
+            }
+        }

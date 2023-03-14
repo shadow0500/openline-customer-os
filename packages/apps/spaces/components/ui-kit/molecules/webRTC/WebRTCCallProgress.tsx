@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faMicrophone,
@@ -7,6 +7,8 @@ import {
   faPause,
   faPhoneSlash,
   faPlay,
+  faRightLeft,
+  faXmarkSquare,
 } from '@fortawesome/free-solid-svg-icons';
 
 import { WebRTCContext } from '../../../../context/web-rtc';
@@ -15,7 +17,15 @@ import { Button, IconButton } from '../../atoms';
 import { useRecoilValue } from 'recoil';
 import { callParticipant } from '../../../../state';
 import { Dialog } from 'primereact/dialog';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { SuggestionList } from './SuggestionList';
+import { useContactSuggestions } from '../../../../hooks/useContactSuggestions';
 export const WebRTCCallProgress: React.FC<any> = () => {
+  const [showRefer, setShowRefer] = useState(false);
+  const [transferDest, setTransferDest] = useState('');
+  const [referProgressString, setReferProgressString] = useState('');
+  const [inRefer, setInRefer] = useState(false);
+  const contactSuggestions = useContactSuggestions({ value: transferDest });
   const {
     inCall,
     isCallMuted,
@@ -27,10 +37,9 @@ export const WebRTCCallProgress: React.FC<any> = () => {
     sendDtmf,
     hangupCall,
     ringing,
-    callerId,
+    transferCall,
   } = useContext(WebRTCContext) as any;
   const { identity } = useRecoilValue(callParticipant);
-
   const toggleMute = () => {
     if (isCallMuted) {
       unMuteCall();
@@ -89,7 +98,11 @@ export const WebRTCCallProgress: React.FC<any> = () => {
   if (!inCall) {
     return null;
   }
-
+  const transfer = () => {
+    setReferProgressString('');
+    setInRefer(true);
+    transferCall(transferDest);
+  };
   return (
     <Dialog
       visible={inCall && !ringing}
@@ -130,8 +143,95 @@ export const WebRTCCallProgress: React.FC<any> = () => {
             mode='danger'
             icon={<FontAwesomeIcon icon={faPhoneSlash} />}
           />
+
+          <IconButton
+            size='xxs'
+            onClick={() => setShowRefer(!showRefer)}
+            mode='danger'
+            icon={
+              <FontAwesomeIcon icon={showRefer ? faXmarkSquare : faRightLeft} />
+            }
+          />
         </div>
       </article>
+      {showRefer && (
+        <>
+          <div>
+            <div className='w-full text-center align-items-center mb-3'>
+              <InputTextarea
+                className='mr-2'
+                value={transferDest}
+                onChange={(e) => setTransferDest(e.target.value)}
+                autoResize
+                rows={1}
+                placeholder='Transfer to'
+                onKeyPress={(e) => {
+                  if (e.shiftKey && e.key === 'Enter') {
+                    return true;
+                  }
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                  }
+                }}
+                style={{
+                  borderColor: 'black', //Do not set as none!! It breaks InputTextarea autoResize
+                  boxShadow: 'none',
+                }}
+              />
+              <span className='h-full align-items-top'>
+                <Button
+                  onClick={transfer}
+                  className='p-button-success h-full mr-2'
+                >
+                  <FontAwesomeIcon icon={faRightLeft} className='mr-2' />
+                </Button>
+              </span>
+            </div>
+            <div>
+              <SuggestionList
+                currentValue={transferDest}
+                getSuggestions={contactSuggestions}
+                setCurrentValue={setTransferDest}
+              ></SuggestionList>
+            </div>
+          </div>
+        </>
+      )}
+      {inRefer && (
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 2000,
+            width: '100%',
+            height: '100%',
+            top: '0%',
+            background: '#FFFFFFFF',
+          }}
+        >
+          <div
+            style={{
+              margin: 0,
+              position: 'absolute',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: '100%',
+            }}
+          >
+            <div className='w-full text-center align-items-center mb-3'>
+              Transfering call to: {transferDest}
+            </div>
+            <div
+              key='referProgress'
+              className='w-full text-center align-items-center mb-3'
+            >
+              {referProgressString}
+            </div>
+            <div className='w-full text-center align-items-center mb-3'>
+              <FontAwesomeIcon icon={faRightLeft} className='mr-2' />
+            </div>
+          </div>
+        </div>
+      )}
     </Dialog>
   );
 };

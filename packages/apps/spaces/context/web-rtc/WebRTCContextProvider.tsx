@@ -5,10 +5,10 @@ import { UA } from 'jssip';
 import {
   EndEvent,
   IncomingAckEvent,
-  OutgoingAckEvent,
+  OutgoingAckEvent, ReferOptions,
   RTCSession,
-  RTCSessionEventMap,
-} from 'jssip/lib/RTCSession';
+  RTCSessionEventMap
+} from "jssip/lib/RTCSession";
 
 import {
   IncomingRTCSessionEvent,
@@ -24,7 +24,7 @@ export const WebRTCContext = createContext(null);
 
 export const WebRTCContextProvider = (props: any) => {
   const webSocketUrl = `${process.env.NEXT_PUBLIC_WEBRTC_WEBSOCKET_URL}`;
-  const [inCall, setInCall] = useState(false);
+  const [inCall, setInCall] = useState(true);
   const [callerId, setCallerId] = useState('');
   const [ringing, setRinging] = useState(false);
   const [username, setUsername] = useState('');
@@ -36,7 +36,8 @@ export const WebRTCContextProvider = (props: any) => {
   const [isCallOnHold, setIsCallOnHold] = useState(false);
   const [isCallMuted, setIsCallMuted] = useState(false);
   const from = useRecoilValue(userData);
-
+  const [referStatus, setReferStatus] = useState('');
+  const DOMAIN = '@oasis.openline.ai';
   useEffect(() => {
     const refreshCredentials = () => {
       axios
@@ -165,8 +166,9 @@ export const WebRTCContextProvider = (props: any) => {
     }
 
     setInCall(true);
+
     const newSession: RTCSession | undefined = userAgent?.call(
-      'sip:' + destination + '@oasis.openline.ai',
+      'sip:' + destination + DOMAIN,
       options,
     );
     setSession(newSession);
@@ -213,6 +215,49 @@ export const WebRTCContextProvider = (props: any) => {
   };
   const sendDtmf = (digit: string) => {
     session?.sendDTMF(digit);
+  };
+
+  const transferCall = (transferDest: string) => {
+    const eventHandlers = {
+      requestSucceeded: function (e: any) {
+        console.log('xfer is accepted');
+        setReferStatus('requestSucceeded');
+      },
+      trying: function (e: any) {
+        console.log('xfer is trying');
+        setReferStatus('trying');
+      },
+      progress: function (e: any) {
+        console.log('xfer is ringing');
+        setReferStatus('progress');
+      },
+      requestFailed: function (e: any) {
+        console.log(
+          'Faled to contact remote party cause: ' + JSON.stringify(e.cause),
+        );
+        setReferStatus('requestFailed');
+      },
+      failed: function (e: any) {
+        console.log(
+          'Transfer Request rejected with cause: ' + JSON.stringify(e.cause),
+        );
+        setReferStatus('failed');
+      },
+      accepted: function (e: IncomingAckEvent | OutgoingAckEvent) {
+        console.log('call confirmed');
+        setReferStatus('accepted');
+      },
+    };
+    const options: ReferOptions = {
+      eventHandlers: eventHandlers,
+    };
+    if (transferDest.indexOf('@') === -1) {
+      transferDest = transferDest + DOMAIN;
+    }
+    if (!transferDest.startsWith('sip:')) {
+      transferDest = 'sip:' + transferDest;
+    }
+    session?.refer(transferDest, options);
   };
 
   const value = {
