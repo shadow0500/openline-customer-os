@@ -1,4 +1,5 @@
 @import 'styles/mixins';
+
 .actionHeader {
   height: 100%;
   @include justify-end;
@@ -7,7 +8,6 @@
 
 .deselectAllButton {
   padding: 0 !important;
-  position: relative;
   border-radius: 4px;
   height: 16px;
   width: 16px;
@@ -15,18 +15,7 @@
   border-color: var(--gray-600);
   color: var(--gray-600);
   margin-top: var(--spacing-xxxs);
-  margin-right: var(--spacing-xxs);
-
-  &::after {
-    content: 'X';
-    font-size: var(--font-size-sm);
-    width: 8px;
-    height: 8px;
-    position: absolute;
-    top: -4px;
-    left: 2px;
-    color: inherit;
-  }
+  margin-right: var(--spacing-xxxs);
 
   &:focus,
   &:active,
@@ -48,28 +37,13 @@
   }
 }
 
-.mergableCell {
-  display: flex;
-  position: relative;
-}
-
-.checkboxContainer {
-  min-width: 25px;
-  margin-top: 2px;
-  margin-left: var(--spacing-xxxs);
-}
-
 .emptyCell {
   margin-left: var(--spacing-lg);
 }
 
 .actionsMenuButton {
-  width: 30px;
+  width: 30px !important;
   height: 30px;
-}
-.confirmButton {
-  border-radius: 4px;
-  margin-left: var(--spacing-xxs);
 }
 
 .showMoreLocationsIcon {

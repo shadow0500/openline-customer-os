@@ -3,6 +3,7 @@ package resolver
 import (
 	"context"
 	"github.com/99designs/gqlgen/client"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/constants"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/entity"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/model"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/repository"
@@ -143,11 +144,11 @@ func TestQueryResolver_Organizations_WithLocations(t *testing.T) {
 	}
 
 	require.Equal(t, locationId1, locationWithAddressDtls.ID)
-	require.Equal(t, "WORK", locationWithAddressDtls.Name)
+	require.Equal(t, "WORK", *locationWithAddressDtls.Name)
 	require.NotNil(t, locationWithAddressDtls.CreatedAt)
 	require.NotNil(t, locationWithAddressDtls.UpdatedAt)
-	require.Equal(t, "test", *locationWithAddressDtls.AppSource)
-	require.Equal(t, model.DataSourceOpenline, *locationWithAddressDtls.Source)
+	require.Equal(t, "test", locationWithAddressDtls.AppSource)
+	require.Equal(t, model.DataSourceOpenline, locationWithAddressDtls.Source)
 	require.Equal(t, "testCountry", *locationWithAddressDtls.Country)
 	require.Equal(t, "testLocality", *locationWithAddressDtls.Locality)
 	require.Equal(t, "testRegion", *locationWithAddressDtls.Region)
@@ -156,11 +157,11 @@ func TestQueryResolver_Organizations_WithLocations(t *testing.T) {
 	require.Equal(t, "testZip", *locationWithAddressDtls.Zip)
 
 	require.Equal(t, locationId2, locationWithoutAddressDtls.ID)
-	require.Equal(t, "UNKNOWN", locationWithoutAddressDtls.Name)
+	require.Equal(t, "UNKNOWN", *locationWithoutAddressDtls.Name)
 	require.NotNil(t, locationWithoutAddressDtls.CreatedAt)
 	require.NotNil(t, locationWithoutAddressDtls.UpdatedAt)
-	require.Equal(t, "test", *locationWithoutAddressDtls.AppSource)
-	require.Equal(t, model.DataSourceOpenline, *locationWithoutAddressDtls.Source)
+	require.Equal(t, "test", locationWithoutAddressDtls.AppSource)
+	require.Equal(t, model.DataSourceOpenline, locationWithoutAddressDtls.Source)
 	require.Equal(t, "", *locationWithoutAddressDtls.Country)
 	require.Equal(t, "", *locationWithoutAddressDtls.Region)
 	require.Equal(t, "", *locationWithoutAddressDtls.Locality)
@@ -302,6 +303,8 @@ func TestMutationResolver_OrganizationCreate(t *testing.T) {
 	require.Equal(t, "organization website", *createdOrganization.Website)
 	require.Equal(t, "organization industry", *createdOrganization.Industry)
 	require.Equal(t, true, *createdOrganization.IsPublic)
+	require.Equal(t, int64(10), *createdOrganization.Employees)
+	require.Equal(t, model.MarketB2c, *createdOrganization.Market)
 	require.Equal(t, organizationTypeId, createdOrganization.OrganizationType.ID)
 	require.Equal(t, "COMPANY", createdOrganization.OrganizationType.Name)
 	require.Equal(t, model.DataSourceOpenline, createdOrganization.Source)
@@ -350,6 +353,8 @@ func TestMutationResolver_OrganizationUpdate(t *testing.T) {
 	require.Equal(t, "updated website", *updatedOrganization.Website)
 	require.Equal(t, "updated industry", *updatedOrganization.Industry)
 	require.Equal(t, true, *updatedOrganization.IsPublic)
+	require.Equal(t, int64(100), *updatedOrganization.Employees)
+	require.Equal(t, model.MarketB2b, *updatedOrganization.Market)
 	require.Equal(t, organizationTypeIdUpdate, updatedOrganization.OrganizationType.ID)
 	require.Equal(t, "UPDATED", updatedOrganization.OrganizationType.Name)
 	require.Equal(t, model.DataSourceOpenline, updatedOrganization.SourceOfTruth)
@@ -1153,4 +1158,85 @@ func TestMutationResolver_OrganizationCreate_WithCustomFields(t *testing.T) {
 	assertNeo4jLabels(ctx, t, driver, []string{"Tenant", "Domain", "Organization", "Organization_" + tenantName,
 		"CustomFieldTemplate", "EntityTemplate", "FieldSet", "FieldSet_" + tenantName, "FieldSetTemplate",
 		"CustomField", "TextField", "CustomField_" + tenantName})
+}
+
+func TestMutationResolver_OrganizationAddNewLocation(t *testing.T) {
+	ctx := context.TODO()
+	defer tearDownTestCase(ctx)(t)
+	neo4jt.CreateTenant(ctx, driver, tenantName)
+
+	organizationId := neo4jt.CreateOrganization(ctx, driver, tenantName, "org name")
+
+	rawResponse := callGraphQL(t, "organization/add_new_location_to_organization",
+		map[string]interface{}{"organizationId": organizationId})
+
+	var organizationStruct struct {
+		Organization_AddNewLocation model.Location
+	}
+
+	err := decode.Decode(rawResponse.Data.(map[string]any), &organizationStruct)
+	require.Nil(t, err)
+	require.NotNil(t, organizationStruct)
+	location := organizationStruct.Organization_AddNewLocation
+	require.NotNil(t, location.ID)
+	require.NotNil(t, location.CreatedAt)
+	require.NotNil(t, location.UpdatedAt)
+	require.Equal(t, constants.AppSourceCustomerOsApi, location.AppSource)
+	require.Equal(t, model.DataSourceOpenline, location.Source)
+	require.Equal(t, model.DataSourceOpenline, location.SourceOfTruth)
+
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Organization"))
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Location"))
+	require.Equal(t, 1, neo4jt.GetCountOfRelationships(ctx, driver, "ASSOCIATED_WITH"))
+	assertNeo4jLabels(ctx, t, driver, []string{"Tenant", "Location", "Location_" + tenantName, "Organization", "Organization_" + tenantName})
+}
+
+func TestQueryResolver_Organization_WithSocials(t *testing.T) {
+	ctx := context.TODO()
+	defer tearDownTestCase(ctx)(t)
+	neo4jt.CreateTenant(ctx, driver, tenantName)
+	orgId := neo4jt.CreateOrganization(ctx, driver, tenantName, "org name")
+
+	socialId1 := neo4jt.CreateSocial(ctx, driver, tenantName, entity.SocialEntity{
+		PlatformName: "p1",
+		Url:          "url1",
+	})
+	socialId2 := neo4jt.CreateSocial(ctx, driver, tenantName, entity.SocialEntity{
+		PlatformName: "p2",
+		Url:          "url2",
+	})
+	neo4jt.LinkSocialWithEntity(ctx, driver, orgId, socialId1)
+	neo4jt.LinkSocialWithEntity(ctx, driver, orgId, socialId2)
+
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Organization"))
+	require.Equal(t, 2, neo4jt.GetCountOfNodes(ctx, driver, "Social"))
+	require.Equal(t, 2, neo4jt.GetCountOfRelationships(ctx, driver, "HAS"))
+
+	rawResponse := callGraphQL(t, "organization/get_organization_with_socials",
+		map[string]interface{}{"organizationId": orgId})
+
+	var orgStruct struct {
+		Organization model.Organization
+	}
+
+	err := decode.Decode(rawResponse.Data.(map[string]any), &orgStruct)
+	require.Nil(t, err)
+
+	organization := orgStruct.Organization
+	require.NotNil(t, organization)
+	require.Equal(t, 2, len(organization.Socials))
+
+	require.Equal(t, socialId1, organization.Socials[0].ID)
+	require.Equal(t, "p1", *organization.Socials[0].PlatformName)
+	require.Equal(t, "url1", organization.Socials[0].URL)
+	require.NotNil(t, organization.Socials[0].CreatedAt)
+	require.NotNil(t, organization.Socials[0].UpdatedAt)
+	require.Equal(t, "test", organization.Socials[0].AppSource)
+
+	require.Equal(t, socialId2, organization.Socials[1].ID)
+	require.Equal(t, "p2", *organization.Socials[1].PlatformName)
+	require.Equal(t, "url2", organization.Socials[1].URL)
+	require.NotNil(t, organization.Socials[1].CreatedAt)
+	require.NotNil(t, organization.Socials[1].UpdatedAt)
+	require.Equal(t, "test", organization.Socials[1].AppSource)
 }

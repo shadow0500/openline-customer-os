@@ -14,8 +14,7 @@ interface Result {
   ) => Promise<CreateOrganizationMutation['organization_Create'] | null>;
 }
 export const useCreateOrganization = (): Result => {
-  const [createOrganizationMutation, { loading, error, data }] =
-    useCreateOrganizationMutation();
+  const [createOrganizationMutation] = useCreateOrganizationMutation();
   const handleUpdateCacheAfterAddingOrg = (
     cache: ApolloCache<any>,
     { data: { organization_Create } }: any,
@@ -70,20 +69,28 @@ export const useCreateOrganization = (): Result => {
   const handleCreateOrganization: Result['onCreateOrganization'] = async (
     input: OrganizationInput,
   ) => {
+    const createOrganizationToast = toast.loading('Creating organization');
     try {
       const response = await createOrganizationMutation({
         variables: { input },
         update: handleUpdateCacheAfterAddingOrg,
       });
       if (response.data?.organization_Create) {
-        toast.success('Organization was successfully created!', {
-          toastId: `organization-create-success-${response.data.organization_Create.id}`,
+        toast.update(createOrganizationToast, {
+          render: 'Organization was successfully created!',
+          type: 'success',
+          isLoading: false,
+          autoClose: 2000,
         });
       }
       return response.data?.organization_Create ?? null;
     } catch (err) {
-      console.error(err);
-      toast.error('Something went wrong while adding organization');
+      toast.update(createOrganizationToast, {
+        render: 'Something went wrong while creating organization',
+        type: 'error',
+        isLoading: false,
+        autoClose: 2000,
+      });
       return null;
     }
   };

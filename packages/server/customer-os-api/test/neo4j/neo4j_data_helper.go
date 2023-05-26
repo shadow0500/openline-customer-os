@@ -123,7 +123,7 @@ func CreateUserWithId(ctx context.Context, driver *neo4j.DriverWithContext, tena
 					source: $source,
 					sourceOfTruth: $sourceOfTruth
 				})-[:USER_BELONGS_TO_TENANT]->(t)
-			SET u:User_%s`
+			SET u:User_%s, u.roles=$roles`
 	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query, tenant), map[string]any{
 		"tenant":        tenant,
 		"userId":        userId,
@@ -131,8 +131,62 @@ func CreateUserWithId(ctx context.Context, driver *neo4j.DriverWithContext, tena
 		"lastName":      user.LastName,
 		"source":        user.Source,
 		"sourceOfTruth": user.SourceOfTruth,
+		"roles":         user.Roles,
 	})
 	return userId
+}
+
+func CreateDefaultPlayer(ctx context.Context, driver *neo4j.DriverWithContext, authId, provider string) string {
+	return CreatePlayerWithId(ctx, driver, "", entity.PlayerEntity{
+		AuthId:     authId,
+		Provider:   provider,
+		IdentityId: utils.StringPtr("test-player-id"),
+	})
+}
+
+func CreatePlayerWithId(ctx context.Context, driver *neo4j.DriverWithContext, playerId string, player entity.PlayerEntity) string {
+	if len(playerId) == 0 {
+		playerUuid, _ := uuid.NewRandom()
+		playerId = playerUuid.String()
+	}
+	query := `
+			MERGE (p:Player {
+				  	id: $playerId,
+					authId: $authId,
+					provider: $provider
+				})
+			SET     p.identityId = $identityId,
+					p.createdAt = datetime({timezone: 'UTC'}),
+					p.updatedAt = datetime({timezone: 'UTC'}),
+					p.source =  $source,
+					p.sourceOfTruth = $sourceOfTruth,
+			        p.appSource = $appSource`
+
+	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query), map[string]any{
+		"playerId":      playerId,
+		"authId":        player.AuthId,
+		"provider":      player.Provider,
+		"source":        player.Source,
+		"sourceOfTruth": player.SourceOfTruth,
+		"appSource":     player.AppSource,
+		"identityId":    player.IdentityId,
+	})
+
+	return playerId
+}
+
+func LinkPlayerToUser(ctx context.Context, driver *neo4j.DriverWithContext, playerId string, userId string, isDefault bool) {
+	query := `
+			MATCH (p:Player {id:$playerId})
+			MATCH (u:User {id:$userId})
+			MERGE (p)-[:IDENTIFIES {default: $default}]->(u)
+			`
+	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query), map[string]any{
+		"playerId": playerId,
+		"userId":   userId,
+		"default":  isDefault,
+	})
+
 }
 
 func CreateDefaultContact(ctx context.Context, driver *neo4j.DriverWithContext, tenant string) string {
@@ -144,46 +198,23 @@ func CreateContactWith(ctx context.Context, driver *neo4j.DriverWithContext, ten
 }
 
 func CreateContact(ctx context.Context, driver *neo4j.DriverWithContext, tenant string, contact entity.ContactEntity) string {
-	var contactId, _ = uuid.NewRandom()
-	query := "MATCH (t:Tenant {name:$tenant}) " +
-		" MERGE (c:Contact {id: $contactId})-[:CONTACT_BELONGS_TO_TENANT]->(t) " +
-		" ON CREATE SET c.prefix=$prefix, " +
-		"				c.firstName=$firstName, " +
-		"				c.lastName=$lastName, " +
-		"				c.name=$name, " +
-		"				c.appSource=$appSource, " +
-		"				c.source=$source, " +
-		"				c.sourceOfTruth=$sourceOfTruth, " +
-		"				c.createdAt=$now, " +
-		" 				c:Contact_%s"
-
-	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query, tenant), map[string]any{
-		"tenant":        tenant,
-		"contactId":     contactId.String(),
-		"prefix":        contact.Prefix,
-		"firstName":     contact.FirstName,
-		"lastName":      contact.LastName,
-		"name":          contact.Name,
-		"now":           time.Now().UTC(),
-		"source":        contact.Source,
-		"sourceOfTruth": contact.SourceOfTruth,
-		"appSource":     utils.StringFirstNonEmpty(contact.AppSource, "test"),
-	})
-	return contactId.String()
-}
-
-func CreateContactWithId(ctx context.Context, driver *neo4j.DriverWithContext, tenant string, contactId string, contact entity.ContactEntity) string {
-	query := "MATCH (t:Tenant {name:$tenant}) " +
-		" MERGE (c:Contact {id: $contactId})-[:CONTACT_BELONGS_TO_TENANT]->(t) " +
-		" ON CREATE SET c.prefix=$prefix, " +
-		"				c.firstName=$firstName, " +
-		"				c.lastName=$lastName, " +
-		"				c.name=$name, " +
-		"				c.appSource=$appSource, " +
-		"				c.source=$source, " +
-		"				c.sourceOfTruth=$sourceOfTruth, " +
-		"				c.createdAt=$now, " +
-		" 				c:Contact_%s"
+	var contactId = contact.Id
+	if contactId == "" {
+		contactUuid, _ := uuid.NewRandom()
+		contactId = contactUuid.String()
+	}
+	query := `MATCH (t:Tenant {name: $tenant}) 
+		 		MERGE (c:Contact {id: $contactId})-[:CONTACT_BELONGS_TO_TENANT]->(t) 
+			 	ON CREATE SET c.prefix=$prefix, 
+						c.firstName=$firstName, 
+						c.lastName=$lastName, 
+						c.name=$name, 
+						c.description=$description,
+						c.appSource=$appSource, 
+						c.source=$source, 
+						c.sourceOfTruth=$sourceOfTruth, 
+						c.createdAt=$now, 
+		 				c:Contact_%s`
 
 	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query, tenant), map[string]any{
 		"tenant":        tenant,
@@ -192,12 +223,18 @@ func CreateContactWithId(ctx context.Context, driver *neo4j.DriverWithContext, t
 		"firstName":     contact.FirstName,
 		"lastName":      contact.LastName,
 		"name":          contact.Name,
-		"now":           time.Now().UTC(),
+		"description":   contact.Description,
+		"now":           utils.Now(),
 		"source":        contact.Source,
 		"sourceOfTruth": contact.SourceOfTruth,
 		"appSource":     utils.StringFirstNonEmpty(contact.AppSource, "test"),
 	})
 	return contactId
+}
+
+func CreateContactWithId(ctx context.Context, driver *neo4j.DriverWithContext, tenant string, contactId string, contact entity.ContactEntity) string {
+	contact.Id = contactId
+	return CreateContact(ctx, driver, tenant, contact)
 }
 
 func CreateDefaultFieldSet(ctx context.Context, driver *neo4j.DriverWithContext, contactId string) string {
@@ -724,6 +761,8 @@ func CreateLocation(ctx context.Context, driver *neo4j.DriverWithContext, tenant
 		"				l.rawAddress=$rawAddress, " +
 		"				l.latitude=$latitude, " +
 		"				l.longitude=$longitude, " +
+		"				l.utcOffset=$utcOffset, " +
+		"				l.timeZone=$timeZone, " +
 		"				l:Location_%s"
 
 	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query, tenant), map[string]any{
@@ -750,6 +789,8 @@ func CreateLocation(ctx context.Context, driver *neo4j.DriverWithContext, tenant
 		"rawAddress":   location.RawAddress,
 		"latitude":     location.Latitude,
 		"longitude":    location.Longitude,
+		"utcOffset":    location.UtcOffset,
+		"timeZone":     location.TimeZone,
 	})
 	return locationId.String()
 }
@@ -1100,6 +1141,38 @@ func CreateState(ctx context.Context, driver *neo4j.DriverWithContext, countryCo
 		"countryCodeA3": countryCodeA3,
 		"name":          name,
 		"code":          code,
+	})
+}
+
+func CreateSocial(ctx context.Context, driver *neo4j.DriverWithContext, tenant string, social entity.SocialEntity) string {
+	var socialId, _ = uuid.NewRandom()
+	query := " MERGE (s:Social {id:$id}) " +
+		" ON CREATE SET s.platformName=$platformName, " +
+		"				s.url=$url, " +
+		"				s.source=$source, " +
+		"				s.sourceOfTruth=$source, " +
+		"				s.appSource=$appSource, " +
+		"				s.createdAt=$now, " +
+		"				s.updatedAt=$now, " +
+		"				s:Social_%s"
+
+	ExecuteWriteQuery(ctx, driver, fmt.Sprintf(query, tenant), map[string]any{
+		"tenant":       tenant,
+		"id":           socialId.String(),
+		"source":       entity.DataSourceOpenline,
+		"appSource":    "test",
+		"platformName": social.PlatformName,
+		"url":          social.Url,
+		"now":          utils.Now(),
+	})
+	return socialId.String()
+}
+
+func LinkSocialWithEntity(ctx context.Context, driver *neo4j.DriverWithContext, entityId, socialId string) {
+	query := `MATCH (e {id:$entityId}), (s:Social {id:$socialId}) MERGE (e)-[:HAS]->(s)`
+	ExecuteWriteQuery(ctx, driver, query, map[string]any{
+		"entityId": entityId,
+		"socialId": socialId,
 	})
 }
 

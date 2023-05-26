@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/dbtype"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"reflect"
 	"runtime"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -54,6 +57,15 @@ func BoolPtr(b bool) *bool {
 
 func TimePtr(t time.Time) *time.Time {
 	return &t
+}
+
+func TimePtrFirstNonNilNillableAsAny(times ...*time.Time) interface{} {
+	for _, t := range times {
+		if t != nil {
+			return *t
+		}
+	}
+	return nil
 }
 
 func NodePtr(node dbtype.Node) *dbtype.Node {
@@ -225,7 +237,12 @@ func AnySliceToStringSlice(input []any) ([]string, error) {
 
 func GetFunctionName() string {
 	pc, _, _, _ := runtime.Caller(2)
-	return runtime.FuncForPC(pc).Name()
+	fullName := runtime.FuncForPC(pc).Name()
+	lastSlash := strings.LastIndex(fullName, "/")
+	if lastSlash >= 0 {
+		fullName = fullName[lastSlash+1:]
+	}
+	return fullName
 }
 
 func LogMethodExecution(start time.Time, methodName string) {
@@ -233,9 +250,37 @@ func LogMethodExecution(start time.Time, methodName string) {
 	logrus.Infof("Method %s execution time: %d ms", methodName, duration)
 }
 
+func LogMethodExecutionWithZap(logger *zap.SugaredLogger, start time.Time, methodName string) {
+	if logger == nil {
+		LogMethodExecution(start, methodName)
+	}
+	duration := time.Since(start).Milliseconds()
+	logger.Infof("(%s) Execution time: %d ms", methodName, duration)
+}
+
 func ConvertTimeToTimestampPtr(input *time.Time) *timestamppb.Timestamp {
 	if input == nil {
 		return nil
 	}
 	return timestamppb.New(*input)
+}
+
+func ParseStringToFloat(input string) *float64 {
+	if input == "" {
+		return nil
+	}
+
+	parsedFloat, err := strconv.ParseFloat(input, 64)
+	if err != nil {
+		fmt.Printf("Error parsing string to float: %v\n", err)
+		return nil
+	}
+	return &parsedFloat
+}
+
+func FloatToString(num *float64) string {
+	if num == nil {
+		return ""
+	}
+	return fmt.Sprintf("%f", *num)
 }

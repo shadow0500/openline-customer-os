@@ -134,7 +134,8 @@ type Contact struct {
 	// The first name of the contact in customerOS.
 	FirstName *string `json:"firstName,omitempty"`
 	// The last name of the contact in customerOS.
-	LastName *string `json:"lastName,omitempty"`
+	LastName    *string `json:"lastName,omitempty"`
+	Description *string `json:"description,omitempty"`
 	// An ISO8601 timestamp recording when the contact was created in customerOS.
 	// **Required**
 	CreatedAt     time.Time  `json:"createdAt"`
@@ -157,6 +158,7 @@ type Contact struct {
 	// All locations associated with a contact in customerOS.
 	// **Required.  If no values it returns an empty array.**
 	Locations []*Location `json:"locations"`
+	Socials   []*Social   `json:"socials"`
 	// User defined metadata appended to the contact record in customerOS.
 	// **Required.  If no values it returns an empty array.**
 	CustomFields []*CustomField `json:"customFields"`
@@ -191,8 +193,9 @@ type ContactInput struct {
 	// The first name of the contact.
 	FirstName *string `json:"firstName,omitempty"`
 	// The last name of the contact.
-	LastName *string `json:"lastName,omitempty"`
-	Label    *string `json:"label,omitempty"`
+	LastName    *string `json:"lastName,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Label       *string `json:"label,omitempty"`
 	// An ISO8601 timestamp recording when the contact was created in customerOS.
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	// User defined metadata appended to contact.
@@ -239,7 +242,8 @@ type ContactUpdateInput struct {
 	// The prefix associate with the contact in customerOS.
 	Prefix *string `json:"prefix,omitempty"`
 	// The first name of the contact in customerOS.
-	FirstName *string `json:"firstName,omitempty"`
+	FirstName   *string `json:"firstName,omitempty"`
+	Description *string `json:"description,omitempty"`
 	// The last name of the contact in customerOS.
 	LastName *string `json:"lastName,omitempty"`
 	Label    *string `json:"label,omitempty"`
@@ -429,27 +433,6 @@ type CustomFieldUpdateInput struct {
 	// **Required**
 	Value AnyTypeValue `json:"value"`
 }
-
-type DashboardViewItem struct {
-	Contact      *Contact      `json:"contact,omitempty"`
-	Organization *Organization `json:"organization,omitempty"`
-}
-
-type DashboardViewItemPage struct {
-	Content       []*DashboardViewItem `json:"content"`
-	TotalPages    int                  `json:"totalPages"`
-	TotalElements int64                `json:"totalElements"`
-}
-
-func (DashboardViewItemPage) IsPages() {}
-
-// The total number of pages included in the query response.
-// **Required.**
-func (this DashboardViewItemPage) GetTotalPages() int { return this.TotalPages }
-
-// The total number of elements included in the query response.
-// **Required.**
-func (this DashboardViewItemPage) GetTotalElements() int64 { return this.TotalElements }
 
 // Describes an email address associated with a `Contact` in customerOS.
 // **A `return` object.**
@@ -755,6 +738,8 @@ type JobRole struct {
 	JobTitle            *string    `json:"jobTitle,omitempty"`
 	Primary             bool       `json:"primary"`
 	ResponsibilityLevel int64      `json:"responsibilityLevel"`
+	StartedAt           *time.Time `json:"startedAt,omitempty"`
+	EndedAt             *time.Time `json:"endedAt,omitempty"`
 	Source              DataSource `json:"source"`
 	SourceOfTruth       DataSource `json:"sourceOfTruth"`
 	AppSource           string     `json:"appSource"`
@@ -763,23 +748,25 @@ type JobRole struct {
 // Describes the relationship a Contact has with an Organization.
 // **A `create` object**
 type JobRoleInput struct {
-	OrganizationID *string `json:"organizationId,omitempty"`
-	// The Contact's job title.
-	JobTitle            *string `json:"jobTitle,omitempty"`
-	Primary             *bool   `json:"primary,omitempty"`
-	ResponsibilityLevel *int64  `json:"responsibilityLevel,omitempty"`
-	AppSource           *string `json:"appSource,omitempty"`
+	OrganizationID      *string    `json:"organizationId,omitempty"`
+	JobTitle            *string    `json:"jobTitle,omitempty"`
+	Primary             *bool      `json:"primary,omitempty"`
+	StartedAt           *time.Time `json:"startedAt,omitempty"`
+	EndedAt             *time.Time `json:"endedAt,omitempty"`
+	ResponsibilityLevel *int64     `json:"responsibilityLevel,omitempty"`
+	AppSource           *string    `json:"appSource,omitempty"`
 }
 
 // Describes the relationship a Contact has with an Organization.
 // **A `create` object**
 type JobRoleUpdateInput struct {
-	ID             string  `json:"id"`
-	OrganizationID *string `json:"organizationId,omitempty"`
-	// The Contact's job title.
-	JobTitle            *string `json:"jobTitle,omitempty"`
-	Primary             *bool   `json:"primary,omitempty"`
-	ResponsibilityLevel *int64  `json:"responsibilityLevel,omitempty"`
+	ID                  string     `json:"id"`
+	StartedAt           *time.Time `json:"startedAt,omitempty"`
+	EndedAt             *time.Time `json:"endedAt,omitempty"`
+	OrganizationID      *string    `json:"organizationId,omitempty"`
+	JobTitle            *string    `json:"jobTitle,omitempty"`
+	Primary             *bool      `json:"primary,omitempty"`
+	ResponsibilityLevel *int64     `json:"responsibilityLevel,omitempty"`
 }
 
 type LinkOrganizationsInput struct {
@@ -794,30 +781,64 @@ type LinkedOrganization struct {
 }
 
 type Location struct {
-	ID           string      `json:"id"`
-	Name         string      `json:"name"`
-	CreatedAt    time.Time   `json:"createdAt"`
-	UpdatedAt    time.Time   `json:"updatedAt"`
-	Source       *DataSource `json:"source,omitempty"`
-	AppSource    *string     `json:"appSource,omitempty"`
-	Country      *string     `json:"country,omitempty"`
-	Region       *string     `json:"region,omitempty"`
-	Locality     *string     `json:"locality,omitempty"`
-	Address      *string     `json:"address,omitempty"`
-	Address2     *string     `json:"address2,omitempty"`
-	Zip          *string     `json:"zip,omitempty"`
-	AddressType  *string     `json:"addressType,omitempty"`
-	HouseNumber  *string     `json:"houseNumber,omitempty"`
-	PostalCode   *string     `json:"postalCode,omitempty"`
-	PlusFour     *string     `json:"plusFour,omitempty"`
-	Commercial   *bool       `json:"commercial,omitempty"`
-	Predirection *string     `json:"predirection,omitempty"`
-	District     *string     `json:"district,omitempty"`
-	Street       *string     `json:"street,omitempty"`
-	RawAddress   *string     `json:"rawAddress,omitempty"`
-	Latitude     *float64    `json:"latitude,omitempty"`
-	Longitude    *float64    `json:"longitude,omitempty"`
-	Place        *Place      `json:"place,omitempty"`
+	ID            string     `json:"id"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+	Source        DataSource `json:"source"`
+	SourceOfTruth DataSource `json:"sourceOfTruth"`
+	AppSource     string     `json:"appSource"`
+	Name          *string    `json:"name,omitempty"`
+	RawAddress    *string    `json:"rawAddress,omitempty"`
+	Country       *string    `json:"country,omitempty"`
+	Region        *string    `json:"region,omitempty"`
+	District      *string    `json:"district,omitempty"`
+	Locality      *string    `json:"locality,omitempty"`
+	Street        *string    `json:"street,omitempty"`
+	Address       *string    `json:"address,omitempty"`
+	Address2      *string    `json:"address2,omitempty"`
+	Zip           *string    `json:"zip,omitempty"`
+	AddressType   *string    `json:"addressType,omitempty"`
+	HouseNumber   *string    `json:"houseNumber,omitempty"`
+	PostalCode    *string    `json:"postalCode,omitempty"`
+	PlusFour      *string    `json:"plusFour,omitempty"`
+	Commercial    *bool      `json:"commercial,omitempty"`
+	Predirection  *string    `json:"predirection,omitempty"`
+	Latitude      *float64   `json:"latitude,omitempty"`
+	Longitude     *float64   `json:"longitude,omitempty"`
+	TimeZone      *string    `json:"timeZone,omitempty"`
+	UtcOffset     *int64     `json:"utcOffset,omitempty"`
+}
+
+func (Location) IsSourceFields()                   {}
+func (this Location) GetID() string                { return this.ID }
+func (this Location) GetSource() DataSource        { return this.Source }
+func (this Location) GetSourceOfTruth() DataSource { return this.SourceOfTruth }
+func (this Location) GetAppSource() string         { return this.AppSource }
+
+func (Location) IsNode() {}
+
+type LocationUpdateInput struct {
+	ID           string   `json:"id"`
+	Name         *string  `json:"name,omitempty"`
+	RawAddress   *string  `json:"rawAddress,omitempty"`
+	Country      *string  `json:"country,omitempty"`
+	Region       *string  `json:"region,omitempty"`
+	District     *string  `json:"district,omitempty"`
+	Locality     *string  `json:"locality,omitempty"`
+	Street       *string  `json:"street,omitempty"`
+	Address      *string  `json:"address,omitempty"`
+	Address2     *string  `json:"address2,omitempty"`
+	Zip          *string  `json:"zip,omitempty"`
+	AddressType  *string  `json:"addressType,omitempty"`
+	HouseNumber  *string  `json:"houseNumber,omitempty"`
+	PostalCode   *string  `json:"postalCode,omitempty"`
+	PlusFour     *string  `json:"plusFour,omitempty"`
+	Commercial   *bool    `json:"commercial,omitempty"`
+	Predirection *string  `json:"predirection,omitempty"`
+	Latitude     *float64 `json:"latitude,omitempty"`
+	Longitude    *float64 `json:"longitude,omitempty"`
+	TimeZone     *string  `json:"timeZone,omitempty"`
+	UtcOffset    *int64   `json:"utcOffset,omitempty"`
 }
 
 type Meeting struct {
@@ -934,6 +955,8 @@ type Organization struct {
 	Website          *string           `json:"website,omitempty"`
 	Industry         *string           `json:"industry,omitempty"`
 	IsPublic         *bool             `json:"isPublic,omitempty"`
+	Market           *Market           `json:"market,omitempty"`
+	Employees        *int64            `json:"employees,omitempty"`
 	OrganizationType *OrganizationType `json:"organizationType,omitempty"`
 	Source           DataSource        `json:"source"`
 	SourceOfTruth    DataSource        `json:"sourceOfTruth"`
@@ -941,6 +964,7 @@ type Organization struct {
 	// All addresses associated with an organization in customerOS.
 	// **Required.  If no values it returns an empty array.**
 	Locations                []*Location             `json:"locations"`
+	Socials                  []*Social               `json:"socials"`
 	Contacts                 *ContactsPage           `json:"contacts"`
 	JobRoles                 []*JobRole              `json:"jobRoles"`
 	Notes                    *NotePage               `json:"notes"`
@@ -976,6 +1000,8 @@ type OrganizationInput struct {
 	FieldSets          []*FieldSetInput    `json:"fieldSets,omitempty"`
 	TemplateID         *string             `json:"templateId,omitempty"`
 	OrganizationTypeID *string             `json:"organizationTypeId,omitempty"`
+	Market             *Market             `json:"market,omitempty"`
+	Employees          *int64              `json:"employees,omitempty"`
 	AppSource          *string             `json:"appSource,omitempty"`
 }
 
@@ -1032,6 +1058,8 @@ type OrganizationUpdateInput struct {
 	Industry           *string  `json:"industry,omitempty"`
 	IsPublic           *bool    `json:"isPublic,omitempty"`
 	OrganizationTypeID *string  `json:"organizationTypeId,omitempty"`
+	Market             *Market  `json:"market,omitempty"`
+	Employees          *int64   `json:"employees,omitempty"`
 }
 
 type PageView struct {
@@ -1130,20 +1158,35 @@ type PhoneNumberUpdateInput struct {
 	PhoneNumber *string `json:"phoneNumber,omitempty"`
 }
 
-type Place struct {
-	ID        string      `json:"id"`
-	CreatedAt time.Time   `json:"createdAt"`
-	UpdatedAt time.Time   `json:"updatedAt"`
-	Country   *string     `json:"country,omitempty"`
-	State     *string     `json:"state,omitempty"`
-	City      *string     `json:"city,omitempty"`
-	Address   *string     `json:"address,omitempty"`
-	Address2  *string     `json:"address2,omitempty"`
-	Zip       *string     `json:"zip,omitempty"`
-	Phone     *string     `json:"phone,omitempty"`
-	Fax       *string     `json:"fax,omitempty"`
-	Source    *DataSource `json:"source,omitempty"`
-	AppSource *string     `json:"appSource,omitempty"`
+type Player struct {
+	ID            string        `json:"id"`
+	IdentityID    *string       `json:"identityId,omitempty"`
+	AuthID        string        `json:"authId"`
+	Users         []*PlayerUser `json:"users"`
+	Provider      string        `json:"provider"`
+	CreatedAt     time.Time     `json:"createdAt"`
+	UpdatedAt     time.Time     `json:"updatedAt"`
+	Source        DataSource    `json:"source"`
+	SourceOfTruth DataSource    `json:"sourceOfTruth"`
+	AppSource     string        `json:"appSource"`
+}
+
+type PlayerInput struct {
+	IdentityID *string `json:"identityId,omitempty"`
+	AuthID     string  `json:"authId"`
+	Provider   string  `json:"provider"`
+	AppSource  *string `json:"appSource,omitempty"`
+}
+
+type PlayerUpdate struct {
+	IdentityID *string `json:"identityId,omitempty"`
+	AppSource  *string `json:"appSource,omitempty"`
+}
+
+type PlayerUser struct {
+	User    *User  `json:"user"`
+	Default bool   `json:"default"`
+	Tenant  string `json:"tenant"`
 }
 
 // Describes the success or failure of the GraphQL call.
@@ -1152,6 +1195,37 @@ type Result struct {
 	// The result of the GraphQL call.
 	// **Required.**
 	Result bool `json:"result"`
+}
+
+type Social struct {
+	ID            string     `json:"id"`
+	PlatformName  *string    `json:"platformName,omitempty"`
+	URL           string     `json:"url"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
+	Source        DataSource `json:"source"`
+	SourceOfTruth DataSource `json:"sourceOfTruth"`
+	AppSource     string     `json:"appSource"`
+}
+
+func (Social) IsSourceFields()                   {}
+func (this Social) GetID() string                { return this.ID }
+func (this Social) GetSource() DataSource        { return this.Source }
+func (this Social) GetSourceOfTruth() DataSource { return this.SourceOfTruth }
+func (this Social) GetAppSource() string         { return this.AppSource }
+
+func (Social) IsNode() {}
+
+type SocialInput struct {
+	PlatformName *string `json:"platformName,omitempty"`
+	URL          string  `json:"url"`
+	AppSource    *string `json:"appSource,omitempty"`
+}
+
+type SocialUpdateInput struct {
+	ID           string  `json:"id"`
+	PlatformName *string `json:"platformName,omitempty"`
+	URL          string  `json:"url"`
 }
 
 type SortBy struct {
@@ -1232,7 +1306,9 @@ type User struct {
 	FirstName string `json:"firstName"`
 	// The last name of the customerOS user.
 	// **Required**
-	LastName string `json:"lastName"`
+	LastName string  `json:"lastName"`
+	Player   *Player `json:"player"`
+	Roles    []Role  `json:"roles"`
 	// All email addresses associated with a user in customerOS.
 	// **Required.  If no values it returns an empty array.**
 	Emails       []*Email       `json:"emails,omitempty"`
@@ -1242,6 +1318,8 @@ type User struct {
 	CreatedAt     time.Time         `json:"createdAt"`
 	UpdatedAt     time.Time         `json:"updatedAt"`
 	Source        DataSource        `json:"source"`
+	SourceOfTruth DataSource        `json:"sourceOfTruth"`
+	AppSource     string            `json:"appSource"`
 	Conversations *ConversationPage `json:"conversations"`
 }
 
@@ -1257,6 +1335,12 @@ type UserInput struct {
 	// The email address of the customerOS user.
 	// **Required**
 	Email *EmailInput `json:"email"`
+	// Player to associate with the user with. If the person does not exist, it will be created.
+	// **Required**
+	Player *PlayerInput `json:"player"`
+	// The name of the app performing the create.
+	// **Optional**
+	AppSource *string `json:"appSource,omitempty"`
 }
 
 // Specifies how many pages of `User` information has been returned in the query response.
@@ -1751,6 +1835,49 @@ func (e GCliSearchResultType) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+type Market string
+
+const (
+	MarketB2b   Market = "B2B"
+	MarketB2c   Market = "B2C"
+	MarketB2b2c Market = "B2B2C"
+)
+
+var AllMarket = []Market{
+	MarketB2b,
+	MarketB2c,
+	MarketB2b2c,
+}
+
+func (e Market) IsValid() bool {
+	switch e {
+	case MarketB2b, MarketB2c, MarketB2b2c:
+		return true
+	}
+	return false
+}
+
+func (e Market) String() string {
+	return string(e)
+}
+
+func (e *Market) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Market(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Market", str)
+	}
+	return nil
+}
+
+func (e Market) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 // The honorific title of an individual.
 // **A `response` object.**
 type PersonTitle string
@@ -1857,20 +1984,22 @@ func (e PhoneNumberLabel) MarshalGQL(w io.Writer) {
 type Role string
 
 const (
-	RoleAdmin Role = "ADMIN"
-	RoleOwner Role = "OWNER"
-	RoleUser  Role = "USER"
+	RoleAdmin                   Role = "ADMIN"
+	RoleCustomerOsPlatformOwner Role = "CUSTOMER_OS_PLATFORM_OWNER"
+	RoleOwner                   Role = "OWNER"
+	RoleUser                    Role = "USER"
 )
 
 var AllRole = []Role{
 	RoleAdmin,
+	RoleCustomerOsPlatformOwner,
 	RoleOwner,
 	RoleUser,
 }
 
 func (e Role) IsValid() bool {
 	switch e {
-	case RoleAdmin, RoleOwner, RoleUser:
+	case RoleAdmin, RoleCustomerOsPlatformOwner, RoleOwner, RoleUser:
 		return true
 	}
 	return false

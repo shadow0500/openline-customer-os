@@ -10,6 +10,8 @@ extend type Mutation {
     organization_Merge(primaryOrganizationId: ID!, mergedOrganizationIds: [ID!]!): Organization!
     organization_AddSubsidiary(input: LinkOrganizationsInput!): Organization!
     organization_RemoveSubsidiary(organizationId: ID!, subsidiaryId: ID!): Organization!
+    organization_AddNewLocation(organizationId: ID!): Location!
+    organization_AddSocial(organizationId: ID!, input: SocialInput!): Social!
 }
 
 type LinkedOrganization {
@@ -28,6 +30,8 @@ type Organization implements Node {
     website:     String
     industry:    String
     isPublic:    Boolean
+    market:      Market
+    employees:   Int64
     organizationType: OrganizationType @goField(forceResolver: true)
     source: DataSource!
     sourceOfTruth: DataSource!
@@ -38,6 +42,7 @@ type Organization implements Node {
     **Required.  If no values it returns an empty array.**
     """
     locations: [Location!]! @goField(forceResolver: true)
+    socials: [Social!]! @goField(forceResolver: true)
     contacts(pagination: Pagination, where: Filter, sort: [SortBy!]): ContactsPage! @goField(forceResolver: true)
     jobRoles: [JobRole!]! @goField(forceResolver: true)
     notes(pagination: Pagination): NotePage! @goField(forceResolver: true)
@@ -77,6 +82,8 @@ input OrganizationInput {
     fieldSets: [FieldSetInput!]
     templateId: ID
     organizationTypeId: ID
+    market:      Market
+    employees:   Int64
     appSource: String
 }
 
@@ -90,10 +97,18 @@ input OrganizationUpdateInput {
     industry:    String
     isPublic:    Boolean
     organizationTypeId: ID
+    market:      Market
+    employees:   Int64
 }
 
 input LinkOrganizationsInput {
     organizationId: ID!
     subOrganizationId: ID!
     type: String
+}
+
+enum Market {
+    B2B
+    B2C
+    B2B2C
 }

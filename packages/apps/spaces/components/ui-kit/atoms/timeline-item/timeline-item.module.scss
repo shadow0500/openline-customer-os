@@ -1,4 +1,4 @@
-@import "styles/mixins";
+@import 'styles/mixins';
 .timelineItem {
   display: flex;
   flex-direction: column;
@@ -9,6 +9,9 @@
   line-height: 1.3rem;
   font-size: 1rem;
   padding: 0 0 25px 0px;
+}
+.timelineItemSkeletonContent {
+  border-radius: var(--border-radius-sm)
 }
 
 .last {
@@ -49,11 +52,16 @@
 }
 
 .metadata {
-  @include flex-between
+  @include flex-between;
 }
 
 .sourceLogo {
-  img {
+  & .logo {
+    position: absolute;
+    right: -28px;
+    transition: filter 0.1s ease-in-out;
+  }
+  & img.logo {
     color: transparent;
     filter: grayscale(1) contrast(0.1);
     position: absolute;
@@ -81,4 +89,14 @@
       padding: 0 var(--spacing-xxs);
     }
   }
+}
+
+.emptyTimeline {
+  font-size: var(--normal-text);
+  text-align: center;
+  width: 100%;
+}
+
+.emptyPlaceholder {
+  height: var(--spacing-sm)
 }

@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/dbtype"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/entity"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/utils"
 )
 
@@ -12,6 +14,8 @@ type LocationRepository interface {
 	GetAllForContacts(ctx context.Context, tenant string, contactIds []string) ([]*utils.DbNodeAndId, error)
 	GetAllForOrganization(ctx context.Context, tenant, organizationId string) ([]*dbtype.Node, error)
 	GetAllForOrganizations(ctx context.Context, tenant string, organizationIds []string) ([]*utils.DbNodeAndId, error)
+	CreateLocationForEntity(ctx context.Context, fromContext string, entityType entity.EntityType, id string, source entity.SourceFields) (*dbtype.Node, error)
+	Update(ctx context.Context, tenant string, locationEntity entity.LocationEntity) (*dbtype.Node, error)
 }
 
 type locationRepository struct {
@@ -25,7 +29,7 @@ func NewLocationRepository(driver *neo4j.DriverWithContext) LocationRepository {
 }
 
 func (r *locationRepository) GetAllForContact(ctx context.Context, tenant, contactId string) ([]*dbtype.Node, error) {
-	session := utils.NewNeo4jWriteSession(ctx, *r.driver)
+	session := utils.NewNeo4jReadSession(ctx, *r.driver)
 	defer session.Close(ctx)
 
 	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -45,7 +49,7 @@ func (r *locationRepository) GetAllForContact(ctx context.Context, tenant, conta
 }
 
 func (r *locationRepository) GetAllForContacts(ctx context.Context, tenant string, contactIds []string) ([]*utils.DbNodeAndId, error) {
-	session := utils.NewNeo4jWriteSession(ctx, *r.driver)
+	session := utils.NewNeo4jReadSession(ctx, *r.driver)
 	defer session.Close(ctx)
 
 	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -69,7 +73,7 @@ func (r *locationRepository) GetAllForContacts(ctx context.Context, tenant strin
 }
 
 func (r *locationRepository) GetAllForOrganization(ctx context.Context, tenant, organizationId string) ([]*dbtype.Node, error) {
-	session := utils.NewNeo4jWriteSession(ctx, *r.driver)
+	session := utils.NewNeo4jReadSession(ctx, *r.driver)
 	defer session.Close(ctx)
 
 	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -89,7 +93,7 @@ func (r *locationRepository) GetAllForOrganization(ctx context.Context, tenant, 
 }
 
 func (r *locationRepository) GetAllForOrganizations(ctx context.Context, tenant string, organizationIds []string) ([]*utils.DbNodeAndId, error) {
-	session := utils.NewNeo4jWriteSession(ctx, *r.driver)
+	session := utils.NewNeo4jReadSession(ctx, *r.driver)
 	defer session.Close(ctx)
 
 	result, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -110,4 +114,102 @@ func (r *locationRepository) GetAllForOrganizations(ctx context.Context, tenant 
 		return nil, err
 	}
 	return result.([]*utils.DbNodeAndId), err
+}
+
+func (r *locationRepository) CreateLocationForEntity(ctx context.Context, tenant string, entityType entity.EntityType, entityId string, source entity.SourceFields) (*dbtype.Node, error) {
+	session := utils.NewNeo4jWriteSession(ctx, *r.driver)
+	defer session.Close(ctx)
+
+	query := `MATCH (e:%s {id:$entityId}), (t:Tenant {name:$tenant})
+		 MERGE (e)-[:ASSOCIATED_WITH]->(loc:Location {id:randomUUID()})-[:LOCATION_BELONGS_TO_TENANT]->(t)
+		 ON CREATE SET 
+		  loc.createdAt=$now, 
+		  loc.updatedAt=$now, 
+		  loc.source=$source, 
+		  loc.sourceOfTruth=$sourceOfTruth, 
+		  loc.appSource=$appSource, 
+		  loc:%s
+		 RETURN loc`
+
+	if result, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		queryResult, err := tx.Run(ctx, fmt.Sprintf(query, entityType.Neo4jLabel()+"_"+tenant, "Location_"+tenant),
+			map[string]any{
+				"tenant":        tenant,
+				"now":           utils.Now(),
+				"entityId":      entityId,
+				"source":        source.Source,
+				"sourceOfTruth": source.SourceOfTruth,
+				"appSource":     source.AppSource,
+			})
+		return utils.ExtractSingleRecordFirstValueAsNode(ctx, queryResult, err)
+	}); err != nil {
+		return nil, err
+	} else {
+		return result.(*dbtype.Node), nil
+	}
+}
+
+func (r *locationRepository) Update(ctx context.Context, tenant string, locationEntity entity.LocationEntity) (*dbtype.Node, error) {
+	session := utils.NewNeo4jWriteSession(ctx, *r.driver)
+	defer session.Close(ctx)
+
+	query := `MATCH (t:Tenant {name:$tenant})<-[:LOCATION_BELONGS_TO_TENANT]-(loc:Location {id:$id})
+			SET loc.updatedAt=$now,
+				loc.name=$name,
+				loc.rawAddress=$rawAddress,
+				loc.sourceOfTruth=$sourceOfTruth,
+				loc.country=$country,	
+				loc.region=$region,
+				loc.locality=$locality,
+				loc.address=$address,
+				loc.address2=$address2,
+				loc.zip=$zip,
+				loc.addressType=$addressType,
+				loc.houseNumber=$houseNumber,
+				loc.postalCode=$postalCode,
+				loc.plusFour=$plusFour,
+				loc.commercial=$commercial,
+				loc.predirection=$predirection,
+				loc.district=$district,
+				loc.street=$street,	
+				loc.latitude=$latitude,
+				loc.longitude=$longitude,	
+				loc.timeZone=$timeZone,
+				loc.utcOffset=$utcOffset
+			RETURN loc`
+
+	if result, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		queryResult, err := tx.Run(ctx, query,
+			map[string]any{
+				"tenant":        tenant,
+				"now":           utils.Now(),
+				"id":            locationEntity.Id,
+				"name":          locationEntity.Name,
+				"rawAddress":    locationEntity.RawAddress,
+				"sourceOfTruth": locationEntity.SourceOfTruth,
+				"country":       locationEntity.Country,
+				"region":        locationEntity.Region,
+				"locality":      locationEntity.Locality,
+				"address":       locationEntity.Address,
+				"address2":      locationEntity.Address2,
+				"zip":           locationEntity.Zip,
+				"addressType":   locationEntity.AddressType,
+				"houseNumber":   locationEntity.HouseNumber,
+				"postalCode":    locationEntity.PostalCode,
+				"plusFour":      locationEntity.PlusFour,
+				"commercial":    locationEntity.Commercial,
+				"predirection":  locationEntity.Predirection,
+				"district":      locationEntity.District,
+				"street":        locationEntity.Street,
+				"latitude":      locationEntity.Latitude,
+				"longitude":     locationEntity.Longitude,
+				"timeZone":      locationEntity.TimeZone,
+				"utcOffset":     locationEntity.UtcOffset,
+			})
+		return utils.ExtractSingleRecordFirstValueAsNode(ctx, queryResult, err)
+	}); err != nil {
+		return nil, err
+	} else {
+		return result.(*dbtype.Node), nil
+	}
 }

@@ -6,30 +6,24 @@ package resolver
 
 import (
 	"context"
+	"time"
 
-	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/generated"
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/model"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/mapper"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/utils"
 )
 
-// Place is the resolver for the place field.
-func (r *locationResolver) Place(ctx context.Context, obj *model.Location) (*model.Place, error) {
-	//Deprecated
-	return &model.Place{
-		ID:        obj.ID,
-		CreatedAt: obj.CreatedAt,
-		UpdatedAt: obj.UpdatedAt,
-		Country:   obj.Country,
-		State:     obj.Region,
-		City:      obj.Locality,
-		Address:   obj.Address,
-		Address2:  obj.Address2,
-		Zip:       obj.Zip,
-		AppSource: obj.AppSource,
-		Source:    obj.Source,
-	}, nil
+// LocationUpdate is the resolver for the location_Update field.
+func (r *mutationResolver) LocationUpdate(ctx context.Context, input model.LocationUpdateInput) (*model.Location, error) {
+	defer func(start time.Time) {
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
+	}(time.Now())
+
+	locationEntity, err := r.Services.LocationService.Update(ctx, *mapper.MapLocationUpdateInputToEntity(&input))
+	if err != nil {
+		graphql.AddErrorf(ctx, "Failed to update location")
+		return nil, err
+	}
+	return mapper.MapEntityToLocation(locationEntity), nil
 }
-
-// Location returns generated.LocationResolver implementation.
-func (r *Resolver) Location() generated.LocationResolver { return &locationResolver{r} }
-
-type locationResolver struct{ *Resolver }

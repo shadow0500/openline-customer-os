@@ -1,41 +1,59 @@
-import { ApolloError, NetworkStatus } from '@apollo/client';
-import { Pagination } from './types';
 import {
   Contact,
-  GetContactListQueryVariables,
-  useGetContactListQuery,
+  DashboardView_ContactsQueryVariables,
+  useDashboardView_ContactsQuery,
+} from './types';
+import { ApolloError, NetworkStatus } from '@apollo/client';
+import {
+  Filter,
+  InputMaybe,
+  SortBy,
 } from '../../graphQL/__generated__/generated';
+import { useRecoilValue } from 'recoil';
+import { finderContactTableSortingState } from '../../state/finderTables';
 
-interface Props {
-  pagination: Pagination;
-  searchTerm: string;
-}
 
 interface Result {
   data: Array<Contact> | null;
   loading: boolean;
   error: ApolloError | null;
-  fetchMore: (data: { variables: GetContactListQueryVariables }) => void;
-  variables: GetContactListQueryVariables;
+  fetchMore: (data: {
+    variables: DashboardView_ContactsQueryVariables;
+  }) => void;
+  refetchData: any;
+  variables: DashboardView_ContactsQueryVariables;
   networkStatus?: NetworkStatus;
   totalElements: null | number;
 }
-export const useFinderContactTableData = ({
-  pagination,
-  searchTerm,
-}: Props): Result => {
+
+export const useFinderContactTableData = (filters?: Filter[]): Result => {
   const initialVariables = {
     pagination: {
-      page: 0,
-      limit: 10,
+      page: 1,
+      limit: 20,
     },
-    searchTerm,
+    where: undefined as InputMaybe<Filter> | undefined,
   };
+  const sortingState = useRecoilValue(finderContactTableSortingState);
+  const sortBy: SortBy | undefined = sortingState.column
+    ? {
+        by: sortingState.column,
+        direction: sortingState.direction,
+        caseSensitive: false,
+      }
+    : undefined;
+  if (filters && filters.length > 0) {
+    initialVariables.where = { AND: filters } as Filter;
+  }
   const { data, loading, error, refetch, variables, fetchMore, networkStatus } =
-    useGetContactListQuery({
-      fetchPolicy: 'cache-first',
+    useDashboardView_ContactsQuery({
+      fetchPolicy: 'cache-and-network',
       notifyOnNetworkStatusChange: true,
-      variables: initialVariables,
+      variables: {
+        pagination: initialVariables.pagination,
+        where: initialVariables.where,
+        sort: sortBy,
+      },
     });
 
   if (loading) {
@@ -43,9 +61,10 @@ export const useFinderContactTableData = ({
       loading: true,
       error: null,
       //@ts-expect-error revisit later, not matching generated types
-      data: data?.contacts?.content || [],
-      totalElements: data?.contacts?.totalElements || null,
+      data: data?.dashboardView_Contacts?.content || [],
+      totalElements: data?.dashboardView_Contacts?.totalElements || null,
       fetchMore,
+      refetchData: refetch,
       variables: variables || initialVariables,
       networkStatus,
     };
@@ -59,19 +78,20 @@ export const useFinderContactTableData = ({
       networkStatus,
       data: null,
       fetchMore,
-      totalElements: data?.contacts?.totalElements || null,
+      refetchData: refetch,
+      totalElements: data?.dashboardView_Contacts?.totalElements || null,
     };
   }
 
   return {
     //@ts-expect-error revisit later, not matching generated types
-    data: data?.contacts?.content,
-    totalElements: data?.contacts?.totalElements || null,
+    data: data?.dashboardView_Contacts?.content,
+    totalElements: data?.dashboardView_Contacts?.totalElements || null,
     fetchMore,
     loading,
     error: null,
     variables: variables || initialVariables,
-    refetch,
+    refetchData: refetch,
     networkStatus,
   };
 };

@@ -18,6 +18,8 @@ import Inbox from '@spaces/atoms/icons/Inbox';
 import classNames from 'classnames';
 import { useCreateContactJobRole } from '@spaces/hooks/useContactJobRole/useCreateContactJobRole';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { getContactDisplayName } from '../../../utils';
+import { Contact } from '../../../graphQL/__generated__/generated';
 
 export const ContactPersonalDetails = ({ id }: { id: string }) => {
   const { data, loading, error } = useContactPersonalDetailsWithOrganizations({
@@ -52,7 +54,11 @@ export const ContactPersonalDetails = ({ id }: { id: string }) => {
     <div className={styles.header}>
       <div className={styles.avatarWrapper}>
         <div className={styles.photo}>
-          <ContactAvatar contactId={id} size={50} />
+          <ContactAvatar
+            contactId={id}
+            size={50}
+            name={getContactDisplayName(data as Contact)}
+          />
         </div>
         {isEditMode && (
           <>
@@ -62,7 +68,7 @@ export const ContactPersonalDetails = ({ id }: { id: string }) => {
               size='xxxs'
               mode='danger'
               onClick={() => setDeleteConfirmationModalVisible(true)}
-              icon={<Inbox height={20}/>}
+              icon={<Inbox height={20} />}
             />
             <DeleteConfirmationDialog
               deleteConfirmationModalVisible={deleteConfirmationModalVisible}

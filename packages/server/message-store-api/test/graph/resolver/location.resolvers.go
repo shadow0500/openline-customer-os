@@ -7,16 +7,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/openline-ai/openline-customer-os/packages/server/message-store-api/test/graph/generated"
 	"github.com/openline-ai/openline-customer-os/packages/server/message-store-api/test/graph/model"
 )
 
-// Place is the resolver for the place field.
-func (r *locationResolver) Place(ctx context.Context, obj *model.Location) (*model.Place, error) {
-	panic(fmt.Errorf("not implemented: Place - place"))
+// LocationUpdate is the resolver for the location_Update field.
+func (r *mutationResolver) LocationUpdate(ctx context.Context, input model.LocationUpdateInput) (*model.Location, error) {
+	panic(fmt.Errorf("not implemented: LocationUpdate - location_Update"))
 }
-
-// Location returns generated.LocationResolver implementation.
-func (r *Resolver) Location() generated.LocationResolver { return &locationResolver{r} }
-
-type locationResolver struct{ *Resolver }

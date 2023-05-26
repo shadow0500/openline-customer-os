@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/constants"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/dataloader"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/entity"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/generated"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/model"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/mapper"
@@ -21,7 +23,7 @@ import (
 // AttendedBy is the resolver for the attendedBy field.
 func (r *meetingResolver) AttendedBy(ctx context.Context, obj *model.Meeting) ([]model.MeetingParticipant, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	participantEntities, err := dataloader.For(ctx).GetAttendedByParticipantsForMeeting(ctx, obj.ID)
@@ -35,7 +37,7 @@ func (r *meetingResolver) AttendedBy(ctx context.Context, obj *model.Meeting) ([
 // CreatedBy is the resolver for the createdBy field.
 func (r *meetingResolver) CreatedBy(ctx context.Context, obj *model.Meeting) ([]model.MeetingParticipant, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	participantEntities, err := dataloader.For(ctx).GetCreatedByParticipantsForMeeting(ctx, obj.ID)
@@ -49,8 +51,9 @@ func (r *meetingResolver) CreatedBy(ctx context.Context, obj *model.Meeting) ([]
 // Includes is the resolver for the includes field.
 func (r *meetingResolver) Includes(ctx context.Context, obj *model.Meeting) ([]*model.Attachment, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
+
 	entities, err := dataloader.For(ctx).GetAttachmentsForMeeting(ctx, obj.ID)
 	if err != nil {
 		graphql.AddErrorf(ctx, "Failed to get attachment entities for meeting %s", obj.ID)
@@ -62,7 +65,7 @@ func (r *meetingResolver) Includes(ctx context.Context, obj *model.Meeting) ([]*
 // DescribedBy is the resolver for the describedBy field.
 func (r *meetingResolver) DescribedBy(ctx context.Context, obj *model.Meeting) ([]*model.Analysis, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	analysisEntities, err := dataloader.For(ctx).GetDescribedByForMeeting(ctx, obj.ID)
@@ -76,7 +79,7 @@ func (r *meetingResolver) DescribedBy(ctx context.Context, obj *model.Meeting) (
 // Note is the resolver for the note field.
 func (r *meetingResolver) Note(ctx context.Context, obj *model.Meeting) ([]*model.Note, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	notesForMeeting, err := dataloader.For(ctx).GetNotesForMeeting(ctx, obj.ID)
@@ -90,7 +93,7 @@ func (r *meetingResolver) Note(ctx context.Context, obj *model.Meeting) ([]*mode
 // Events is the resolver for the events field.
 func (r *meetingResolver) Events(ctx context.Context, obj *model.Meeting) ([]*model.InteractionEvent, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	interactionEventEntities, err := dataloader.For(ctx).GetInteractionEventsForMeeting(ctx, obj.ID)
@@ -104,8 +107,9 @@ func (r *meetingResolver) Events(ctx context.Context, obj *model.Meeting) ([]*mo
 // Recording is the resolver for the recording field.
 func (r *meetingResolver) Recording(ctx context.Context, obj *model.Meeting) (*model.Attachment, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
+
 	recording := repository.INCLUDE_NATURE_RECORDING
 	entities, err := r.Services.AttachmentService.GetAttachmentsForNode(ctx, repository.INCLUDED_BY_MEETING, &recording, []string{obj.ID})
 	if err != nil {
@@ -123,6 +127,10 @@ func (r *meetingResolver) Recording(ctx context.Context, obj *model.Meeting) (*m
 
 // MeetingCreate is the resolver for the meeting_Create field.
 func (r *mutationResolver) MeetingCreate(ctx context.Context, meeting model.MeetingInput) (*model.Meeting, error) {
+	defer func(start time.Time) {
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
+	}(time.Now())
+
 	meetingEntity, err := r.Services.MeetingService.Create(ctx,
 		&service.MeetingCreateData{
 			MeetingEntity: mapper.MapMeetingToEntity(&meeting),
@@ -140,6 +148,10 @@ func (r *mutationResolver) MeetingCreate(ctx context.Context, meeting model.Meet
 
 // MeetingUpdate is the resolver for the meeting_Update field.
 func (r *mutationResolver) MeetingUpdate(ctx context.Context, meetingID string, meeting model.MeetingUpdateInput) (*model.Meeting, error) {
+	defer func(start time.Time) {
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
+	}(time.Now())
+
 	input := &service.MeetingUpdateData{
 		MeetingEntity: mapper.MapMeetingInputToEntity(&meeting),
 		NoteEntity:    mapper.MapNoteUpdateInputToEntity(meeting.Note),
@@ -157,7 +169,7 @@ func (r *mutationResolver) MeetingUpdate(ctx context.Context, meetingID string, 
 // MeetingLinkAttendedBy is the resolver for the meeting_LinkAttendedBy field.
 func (r *mutationResolver) MeetingLinkAttendedBy(ctx context.Context, meetingID string, participant model.MeetingParticipantInput) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	err := r.Services.MeetingService.LinkAttendedBy(ctx, meetingID, service.MapMeetingParticipantInputToParticipant(&participant))
@@ -176,7 +188,7 @@ func (r *mutationResolver) MeetingLinkAttendedBy(ctx context.Context, meetingID 
 // MeetingUnlinkAttendedBy is the resolver for the meeting_UnlinkAttendedBy field.
 func (r *mutationResolver) MeetingUnlinkAttendedBy(ctx context.Context, meetingID string, participant model.MeetingParticipantInput) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	err := r.Services.MeetingService.UnlinkAttendedBy(ctx, meetingID, service.MapMeetingParticipantInputToParticipant(&participant))
@@ -195,8 +207,9 @@ func (r *mutationResolver) MeetingUnlinkAttendedBy(ctx context.Context, meetingI
 // MeetingLinkAttachment is the resolver for the meeting_LinkAttachment field.
 func (r *mutationResolver) MeetingLinkAttachment(ctx context.Context, meetingID string, attachmentID string) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
+
 	meeting, err := r.Services.MeetingService.LinkAttachment(ctx, meetingID, attachmentID)
 	if err != nil {
 		return nil, err
@@ -207,8 +220,9 @@ func (r *mutationResolver) MeetingLinkAttachment(ctx context.Context, meetingID 
 // MeetingUnlinkAttachment is the resolver for the meeting_UnlinkAttachment field.
 func (r *mutationResolver) MeetingUnlinkAttachment(ctx context.Context, meetingID string, attachmentID string) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
+
 	meeting, err := r.Services.MeetingService.UnlinkAttachment(ctx, meetingID, attachmentID)
 	if err != nil {
 		return nil, err
@@ -219,8 +233,9 @@ func (r *mutationResolver) MeetingUnlinkAttachment(ctx context.Context, meetingI
 // MeetingLinkRecording is the resolver for the meeting_LinkRecording field.
 func (r *mutationResolver) MeetingLinkRecording(ctx context.Context, meetingID string, attachmentID string) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
+
 	meeting, err := r.Services.MeetingService.LinkRecordingAttachment(ctx, meetingID, attachmentID)
 	if err != nil {
 		return nil, err
@@ -231,8 +246,9 @@ func (r *mutationResolver) MeetingLinkRecording(ctx context.Context, meetingID s
 // MeetingUnlinkRecording is the resolver for the meeting_UnlinkRecording field.
 func (r *mutationResolver) MeetingUnlinkRecording(ctx context.Context, meetingID string, attachmentID string) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
+
 	meeting, err := r.Services.MeetingService.UnlinkRecordingAttachment(ctx, meetingID, attachmentID)
 	if err != nil {
 		return nil, err
@@ -240,10 +256,28 @@ func (r *mutationResolver) MeetingUnlinkRecording(ctx context.Context, meetingID
 	return mapper.MapEntityToMeeting(meeting), nil
 }
 
+// MeetingAddNewLocation is the resolver for the meeting_AddNewLocation field.
+func (r *mutationResolver) MeetingAddNewLocation(ctx context.Context, meetingID string) (*model.Location, error) {
+	defer func(start time.Time) {
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
+	}(time.Now())
+
+	locationEntity, err := r.Services.LocationService.CreateLocationForEntity(ctx, entity.MEETING, meetingID, entity.SourceFields{
+		Source:        entity.DataSourceOpenline,
+		SourceOfTruth: entity.DataSourceOpenline,
+		AppSource:     constants.AppSourceCustomerOsApi,
+	})
+	if err != nil {
+		graphql.AddErrorf(ctx, "Error creating location for meeting %s", meetingID)
+		return nil, err
+	}
+	return mapper.MapEntityToLocation(locationEntity), nil
+}
+
 // Meeting is the resolver for the meeting field.
 func (r *queryResolver) Meeting(ctx context.Context, id string) (*model.Meeting, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	meetingEntity, err := r.Services.MeetingService.GetMeetingById(ctx, id)

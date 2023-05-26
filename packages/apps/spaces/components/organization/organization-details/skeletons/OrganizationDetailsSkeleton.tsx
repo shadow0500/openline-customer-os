@@ -1,7 +1,6 @@
 import React from 'react';
 import { Skeleton } from '@spaces/atoms/skeleton';
 import styles from '../organization-details.module.scss';
-import { OrganizationCommunicationDetailsSkeleton } from './OrganizationCommunicationDetailsSkeleton';
 
 export const OrganizationDetailsSkeleton: React.FC = () => {
   return (
@@ -23,7 +22,6 @@ export const OrganizationDetailsSkeleton: React.FC = () => {
           </p>
         </div>
       </div>
-      <OrganizationCommunicationDetailsSkeleton />
     </div>
   );
 };

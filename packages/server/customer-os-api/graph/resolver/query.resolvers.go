@@ -18,38 +18,20 @@ import (
 // EntityTemplates is the resolver for the entityTemplates field.
 func (r *queryResolver) EntityTemplates(ctx context.Context, extends *model.EntityTemplateExtension) ([]*model.EntityTemplate, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	result, err := r.Services.EntityTemplateService.FindAll(ctx, utils.StringPtr(extends.String()))
 	return mapper.MapEntitiesToEntityTemplates(result), err
 }
 
-// DashboardView is the resolver for the dashboardView field.
-func (r *queryResolver) DashboardView(ctx context.Context, pagination model.Pagination, searchTerm *string) (*model.DashboardViewItemPage, error) {
-	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
-	}(time.Now())
-
-	paginatedResult, err := r.Services.QueryService.GetDashboardViewData(ctx, pagination.Page, pagination.Limit, searchTerm)
-	if err != nil {
-		graphql.AddErrorf(ctx, "Failed to get organizations and contacts data")
-		return nil, err
-	}
-	return &model.DashboardViewItemPage{
-		Content:       mapper.MapEntitiesToDashboardViewItems(paginatedResult.Rows.([]*entity.DashboardViewResultEntity)),
-		TotalPages:    paginatedResult.TotalPages,
-		TotalElements: paginatedResult.TotalRows,
-	}, err
-}
-
 // DashboardViewContacts is the resolver for the dashboardView_Contacts field.
-func (r *queryResolver) DashboardViewContacts(ctx context.Context, pagination model.Pagination, where *model.Filter) (*model.ContactsPage, error) {
+func (r *queryResolver) DashboardViewContacts(ctx context.Context, pagination model.Pagination, where *model.Filter, sort *model.SortBy) (*model.ContactsPage, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
-	paginatedResult, err := r.Services.QueryService.GetDashboardViewContactsData(ctx, pagination.Page, pagination.Limit, where)
+	paginatedResult, err := r.Services.QueryService.GetDashboardViewContactsData(ctx, pagination.Page, pagination.Limit, where, sort)
 	if err != nil {
 		graphql.AddErrorf(ctx, "Failed to get organizations and contacts data")
 		return nil, err
@@ -62,12 +44,12 @@ func (r *queryResolver) DashboardViewContacts(ctx context.Context, pagination mo
 }
 
 // DashboardViewOrganizations is the resolver for the dashboardView_Organizations field.
-func (r *queryResolver) DashboardViewOrganizations(ctx context.Context, pagination model.Pagination, where *model.Filter) (*model.OrganizationPage, error) {
+func (r *queryResolver) DashboardViewOrganizations(ctx context.Context, pagination model.Pagination, where *model.Filter, sort *model.SortBy) (*model.OrganizationPage, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
-	paginatedResult, err := r.Services.QueryService.GetDashboardViewOrganizationsData(ctx, pagination.Page, pagination.Limit, where)
+	paginatedResult, err := r.Services.QueryService.GetDashboardViewOrganizationsData(ctx, pagination.Page, pagination.Limit, where, sort)
 	if err != nil {
 		graphql.AddErrorf(ctx, "Failed to get organizations and contacts data")
 		return nil, err

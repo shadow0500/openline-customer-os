@@ -42,6 +42,16 @@ func (r *mutationResolver) OrganizationRemoveSubsidiary(ctx context.Context, org
 	panic(fmt.Errorf("not implemented: OrganizationRemoveSubsidiary - organization_RemoveSubsidiary"))
 }
 
+// OrganizationAddNewLocation is the resolver for the organization_AddNewLocation field.
+func (r *mutationResolver) OrganizationAddNewLocation(ctx context.Context, organizationID string) (*model.Location, error) {
+	panic(fmt.Errorf("not implemented: OrganizationAddNewLocation - organization_AddNewLocation"))
+}
+
+// OrganizationAddSocial is the resolver for the organization_AddSocial field.
+func (r *mutationResolver) OrganizationAddSocial(ctx context.Context, organizationID string, input model.SocialInput) (*model.Social, error) {
+	panic(fmt.Errorf("not implemented: OrganizationAddSocial - organization_AddSocial"))
+}
+
 // Domains is the resolver for the domains field.
 func (r *organizationResolver) Domains(ctx context.Context, obj *model.Organization) ([]string, error) {
 	panic(fmt.Errorf("not implemented: Domains - domains"))
@@ -55,6 +65,11 @@ func (r *organizationResolver) OrganizationType(ctx context.Context, obj *model.
 // Locations is the resolver for the locations field.
 func (r *organizationResolver) Locations(ctx context.Context, obj *model.Organization) ([]*model.Location, error) {
 	panic(fmt.Errorf("not implemented: Locations - locations"))
+}
+
+// Socials is the resolver for the socials field.
+func (r *organizationResolver) Socials(ctx context.Context, obj *model.Organization) ([]*model.Social, error) {
+	panic(fmt.Errorf("not implemented: Socials - socials"))
 }
 
 // Contacts is the resolver for the contacts field.
@@ -95,6 +110,21 @@ func (r *organizationResolver) Subsidiaries(ctx context.Context, obj *model.Orga
 // SubsidiaryOf is the resolver for the subsidiaryOf field.
 func (r *organizationResolver) SubsidiaryOf(ctx context.Context, obj *model.Organization) ([]*model.LinkedOrganization, error) {
 	panic(fmt.Errorf("not implemented: SubsidiaryOf - subsidiaryOf"))
+}
+
+// CustomFields is the resolver for the customFields field.
+func (r *organizationResolver) CustomFields(ctx context.Context, obj *model.Organization) ([]*model.CustomField, error) {
+	panic(fmt.Errorf("not implemented: CustomFields - customFields"))
+}
+
+// FieldSets is the resolver for the fieldSets field.
+func (r *organizationResolver) FieldSets(ctx context.Context, obj *model.Organization) ([]*model.FieldSet, error) {
+	panic(fmt.Errorf("not implemented: FieldSets - fieldSets"))
+}
+
+// EntityTemplate is the resolver for the entityTemplate field.
+func (r *organizationResolver) EntityTemplate(ctx context.Context, obj *model.Organization) (*model.EntityTemplate, error) {
+	panic(fmt.Errorf("not implemented: EntityTemplate - entityTemplate"))
 }
 
 // TimelineEvents is the resolver for the timelineEvents field.

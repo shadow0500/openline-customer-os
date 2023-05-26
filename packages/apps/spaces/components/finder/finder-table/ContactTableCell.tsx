@@ -2,18 +2,15 @@ import React from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { selectedItemsIds, tableMode } from '../state';
 import styles from './finder-table.module.scss';
-import { Checkbox } from '../../ui-kit/atoms/input';
-import { FinderCell } from './FinderTableCell';
-import {
-  Contact,
-  Organization,
-} from '../../../graphQL/__generated__/generated';
+import { Checkbox } from '@spaces/atoms/checkbox';
+import { Contact } from '../../../graphQL/__generated__/generated';
 import { getContactDisplayName } from '../../../utils';
+import { LinkCell, TableCell } from '@spaces/atoms/table/table-cells/TableCell';
+import { ContactAvatar } from '@spaces/molecules/contact-avatar/ContactAvatar';
 
 export const ContactTableCell: React.FC<{
   contact?: Contact;
-  organization?: Organization;
-}> = ({ contact, organization }) => {
+}> = ({ contact }) => {
   const mode = useRecoilValue(tableMode);
   const [selectedIds, setSelectedIds] = useRecoilState(selectedItemsIds);
 
@@ -33,32 +30,29 @@ export const ContactTableCell: React.FC<{
       return Array.from(new Set([...oldSelectedIds, contact.id]));
     });
   };
+  const displayName = getContactDisplayName(contact);
 
   return (
-    <div className={styles.mergableCell}>
-      <div className={styles.checkboxContainer}>
-        {mode === 'MERGE_CONTACT' && (
-          <Checkbox
-            checked={selectedIds.findIndex((id) => contact.id === id) !== -1}
-            onChange={() => handleCheckboxToggle()}
-          />
-        )}
-      </div>
-      <div className={styles.finderCell}>
-        <FinderCell
-          label={getContactDisplayName(contact)}
-          subLabel={
-            (
-              contact.jobRoles.find((role) =>
-                organization?.id
-                  ? role.organization?.id === organization.id
-                  : role.primary,
-              ) || contact.jobRoles[0]
-            )?.jobTitle || ''
+    <>
+      {mode === 'MERGE' && (
+        <Checkbox
+          checked={selectedIds.findIndex((id) => contact.id === id) !== -1}
+          type='checkbox'
+          label={
+            <TableCell label={displayName || 'Unnamed'}>
+              <ContactAvatar contactId={contact.id} name={displayName} />
+            </TableCell>
           }
-          url={`/contact/${contact.id}`}
+          //@ts-expect-error fixme
+          onChange={handleCheckboxToggle}
         />
-      </div>
-    </div>
+      )}
+
+      {mode !== 'MERGE' && (
+        <LinkCell label={displayName} url={`/contact/${contact.id}`}>
+          <ContactAvatar contactId={contact.id} name={displayName} />
+        </LinkCell>
+      )}
+    </>
   );
 };

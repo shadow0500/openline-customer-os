@@ -2,9 +2,12 @@ import React from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { selectedItemsIds, tableMode } from '../state';
 import styles from './finder-table.module.scss';
-import { Checkbox } from '../../ui-kit/atoms/input';
-import { FinderCell } from './FinderTableCell';
+import { Checkbox } from '@spaces/atoms/checkbox';
 import { Organization } from '../../../graphQL/__generated__/generated';
+import { TableCell } from '@spaces/atoms/table';
+import { LinkCell } from '@spaces/atoms/table/table-cells/TableCell';
+import { FinderCell } from '@spaces/finder/finder-table/FinderTableCell';
+import { OrganizationAvatar } from '@spaces/molecules/organization-avatar/OrganizationAvatar';
 
 export const OrganizationTableCell: React.FC<{
   organization: Organization;
@@ -29,30 +32,50 @@ export const OrganizationTableCell: React.FC<{
     return <div className={styles.emptyCell}>-</div>;
   }
 
-  const industry = (
-    <span className={'capitalise'}>
-      {(organization?.industry ?? '')?.split('_').join(' ').toLowerCase()}
-    </span>
-  );
+  const hasSubsidiaries = !!organization.subsidiaries?.length;
+
   return (
-    <div className={styles.mergableCell}>
-      <div className={styles.checkboxContainer}>
-        {mode === 'MERGE_ORG' && (
-          <Checkbox
-            checked={
-              selectedIds.findIndex((id) => organization.id === id) !== -1
-            }
-            onChange={() => handleCheckboxToggle()}
-          />
-        )}
-      </div>
-      <div className={styles.finderCell}>
-        <FinderCell
-          label={organization.name}
-          subLabel={industry}
-          url={`/organization/${organization.id}`}
+    <>
+      {mode === 'MERGE' && (
+        <Checkbox
+          type='checkbox'
+          checked={selectedIds.findIndex((id) => organization.id === id) !== -1}
+          label={
+            <TableCell
+              label={organization.name || 'Unnamed'}
+              subLabel={
+                hasSubsidiaries
+                  ? organization.subsidiaries[0].organization.name || 'Unnamed'
+                  : ''
+              }
+            >
+              <OrganizationAvatar
+                organizationId={organization.id}
+                name={organization?.name || 'Unnamed'}
+              />
+            </TableCell>
+          }
+          //@ts-expect-error fixme
+          onChange={() => handleCheckboxToggle()}
         />
-      </div>
-    </div>
+      )}
+
+      {mode !== 'MERGE' && (
+        <LinkCell
+          label={organization.name || 'Unnamed'}
+          subLabel={
+            hasSubsidiaries
+              ? organization.subsidiaries[0].organization.name || 'Unnamed'
+              : ''
+          }
+          url={`/organization/${organization.id}`}
+        >
+          <OrganizationAvatar
+            organizationId={organization.id}
+            name={organization?.name || 'Unnamed'}
+          />
+        </LinkCell>
+      )}
+    </>
   );
 };

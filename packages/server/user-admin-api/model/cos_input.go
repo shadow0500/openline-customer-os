@@ -12,10 +12,18 @@ type EmailInput struct {
 	AppSource *string `json:"appSource"`
 }
 
+type PlayerInput struct {
+	IdentityId string  `json:"identityId"`
+	AuthId     string  `json:"authId"`
+	Provider   string  `json:"provider"`
+	AppSource  *string `json:"appSource"`
+}
+
 type UserInput struct {
-	FirstName string     `json:"firstName"`
-	LastName  string     `json:"lastName"`
-	Email     EmailInput `json:"email"`
+	FirstName string      `json:"firstName"`
+	LastName  string      `json:"lastName"`
+	Email     EmailInput  `json:"email"`
+	Player    PlayerInput `json:"player"`
 }
 
 type TenantInput struct {

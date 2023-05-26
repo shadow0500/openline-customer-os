@@ -2,35 +2,58 @@ import styles from './table-cells.module.scss';
 import Link from 'next/link';
 import React, { ReactNode } from 'react';
 import classNames from 'classnames';
-import { Highlight } from '../../highlight';
 
 export const TableCell = ({
   label,
   subLabel,
-  url,
+  children,
   className,
 }: {
   label: string | ReactNode;
   subLabel?: string | ReactNode;
-  url?: string;
   className?: string;
+  children?: ReactNode;
 }) => {
   return (
-    <div className={styles.cell}>
-      {url ? (
-        <Link href={url} className={classNames(styles.link, styles.cellData)}>
-          {label}
-        </Link>
-      ) : (
-        <span className={classNames(className, styles.cellData)}>{label}</span>
-      )}
+    <div className={classNames(styles.cell)}>
+      {children}
 
-      {subLabel && (
-        <span className={classNames(styles.subLabel, styles.cellData)}>
-          {subLabel}
-        </span>
-      )}
+      <div className={classNames({ [styles.textContent]: children })}>
+        <span className={classNames(className, styles.cellData)}>{label}</span>
+        {subLabel && (
+          <span className={classNames(styles.subLabel, styles.cellData)}>
+            {subLabel}
+          </span>
+        )}
+      </div>
     </div>
+  );
+};
+export const LinkCell = ({
+  label,
+  subLabel,
+  url,
+  className,
+  children,
+}: {
+  label: string | ReactNode;
+  subLabel?: string | ReactNode;
+  url: string;
+  className?: string;
+  children?: ReactNode;
+}) => {
+  return (
+    <Link href={url} className={classNames(styles.cell, styles.linkCell)}>
+      {children}
+      <div className={classNames({ [styles.textContent]: children })}>
+        <span className={classNames(className, styles.cellData)}>{label}</span>
+        {subLabel && (
+          <span className={classNames(styles.subLabel, styles.cellData)}>
+            {subLabel}
+          </span>
+        )}
+      </div>
+    </Link>
   );
 };
 
@@ -39,37 +62,54 @@ export const DashboardTableAddressCell = ({
   region = '',
   locality,
   name,
-  highlight = '',
+  street,
+  postalCode,
+  zip,
+  houseNumber,
+  rawAddress,
 }: {
   country?: string | null;
   region?: string | null;
   locality?: string | null;
+  zip?: string | null;
+  postalCode?: string | null;
+  houseNumber?: string | null;
+  rawAddress?: string | null;
+  street?: string | null;
   highlight?: string;
   name?: string | null;
 }) => {
+  if (rawAddress) {
+    return (
+      <div className={styles.addressContainer}>
+        <div className={styles.addressFields}>{rawAddress}</div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.addressContainer}>
-      {name && <Highlight text={name} highlight={highlight} />}
+      {name && name}
 
       <div className={styles.addressFields}>
         {locality && (
-          <div className={`${styles.addressLocality}`}>
-            <Highlight text={locality} highlight={highlight} />
-          </div>
+          <div className={`${styles.addressLocality}`}>{locality}</div>
         )}
 
         {locality && (country || region) && <div>,&nbsp;</div>}
 
-        {country || region ? (
-          <div className={`${styles.addressRegion}`}>
-            <Highlight text={region || ''} highlight={highlight} />{' '}
-            {country && ', '}
-            <Highlight text={country || ''} highlight={highlight} />
-          </div>
-        ) : (
-          ''
-        )}
+        <div className={`${styles.addressRegion}`}>
+          {region && region}
+          {(zip || postalCode) && `, ${zip || postalCode}`}
+          {country && `, ${country}`}
+        </div>
       </div>
+
+      {(street || houseNumber) && (
+        <div className={`${styles.addressRegion}`}>
+          {street} {houseNumber}
+        </div>
+      )}
     </div>
   );
 };

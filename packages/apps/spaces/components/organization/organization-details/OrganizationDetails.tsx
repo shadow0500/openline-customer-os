@@ -4,7 +4,6 @@ import {
   useDeleteOrganization,
   useOrganizationDetails,
 } from '@spaces/hooks/useOrganization';
-import Link from '@spaces/atoms/icons/Link';
 import Trash from '@spaces/atoms/icons/Trash';
 import { useRecoilState } from 'recoil';
 import { organizationDetailsEdit } from '../../../state';
@@ -21,7 +20,9 @@ import {
   useUpdateOrganizationWebsite,
 } from '@spaces/hooks/useOrganizationDetails';
 import { OrganizationDetailsSkeleton } from './skeletons';
-import { OrganizationCustomFields } from "@spaces/organization/organization-details/OrganizationCustomFields";
+import { OrganizationCustomFields } from '@spaces/organization/organization-details/OrganizationCustomFields';
+import Link from 'next/link';
+import { OrganizationSubsidiaries } from '@spaces/organization/organization-details/subsidiaries/OrganizationSubsidiaries';
 export const OrganizationDetails = ({ id }: { id: string }) => {
   const { data, loading } = useOrganizationDetails({ id });
   const [{ isEditMode }, setOrganizationDetailsEdit] = useRecoilState(
@@ -67,6 +68,12 @@ export const OrganizationDetails = ({ id }: { id: string }) => {
             </div>
           </div>
           <h1 className={styles.name}>
+            {!!data.subsidiaryOf.length && (
+              <span className={styles.parent_company_name}>
+                {data.subsidiaryOf[0].organization.name}
+              </span>
+            )}
+
             <EditableContentInput
               id={`organization-details-name-${id}`}
               label='Name'
@@ -138,7 +145,7 @@ export const OrganizationDetails = ({ id }: { id: string }) => {
           )}
 
           {data?.website && !isEditMode && (
-            <Link href={data.website}> {data.website} </Link>
+            <Link href={data.website}>{data.website}</Link>
           )}
         </div>
         {isEditMode && (
@@ -148,7 +155,7 @@ export const OrganizationDetails = ({ id }: { id: string }) => {
               size='sm'
               mode='danger'
               onClick={() => setDeleteConfirmationModalVisible(true)}
-              icon={<Trash height={16}/>}
+              icon={<Trash height={16} />}
             />
             <DeleteConfirmationDialog
               deleteConfirmationModalVisible={deleteConfirmationModalVisible}
@@ -168,6 +175,7 @@ export const OrganizationDetails = ({ id }: { id: string }) => {
       </div>
       <OrganizationCommunicationDetails id={id} />
       <OrganizationCustomFields id={id} />
+      <OrganizationSubsidiaries id={id} />
     </div>
   );
 };

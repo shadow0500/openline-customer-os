@@ -13,6 +13,8 @@ interface DebouncedInputProps
   inputSize?: 'xxxs' | 'xxs' | 'xs' | 'sm' | 'md' | 'lg';
   children?: ReactNode;
   inlineMode?: boolean;
+  className?: string;
+  inputRef?: any;
 }
 
 export const DebouncedInput = ({
@@ -23,10 +25,10 @@ export const DebouncedInput = ({
   inputSize = 'md',
   debounceTimeout = 300,
   inlineMode,
-  className,
+  className = '',
+  inputRef,
   ...rest
 }: DebouncedInputProps) => {
-  const inputRef = useRef(null);
 
   return (
     <div
@@ -41,12 +43,15 @@ export const DebouncedInput = ({
         className={classNames(styles.input, {
           [styles?.[inputSize]]: inputSize,
           [styles.xxxs]: inlineMode,
-          [`${className}`]: className,
+          [`${className}`]: className !== '',
         })}
         minLength={minLength}
         debounceTimeout={debounceTimeout}
         onChange={onChange}
         placeholder={placeholder}
+        spellCheck={false}
+        autoCorrect={'off'}
+        autoCapitalize={'off'}
       />
 
       {children && <span className={styles.icon}>{children}</span>}

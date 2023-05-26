@@ -1,22 +1,19 @@
 import '@openline-ai/openline-web-chat/dist/esm/index.css';
 import React, { FC, ReactNode } from 'react';
-import classNames from 'classnames';
 import styles from './page-content-layout.module.scss';
+import { SidePanel } from '@spaces/organisms/side-panel';
 
 interface PageContentLayout {
-  isPanelOpen: boolean;
-  isSideBarShown: boolean;
   children: ReactNode;
 }
-export const PageContentLayout: FC<PageContentLayout> = ({
-  children,
-  isPanelOpen,
-}) => {
+
+export const PageContentLayout: FC<PageContentLayout> = ({ children }) => {
   return (
-    <div
-      className={classNames(styles.pageContent, { [styles.open]: isPanelOpen })}
-    >
-      {children}
+    <div className={styles.pageContent}>
+      <SidePanel />
+      <div style={{ padding: '1.2rem', height: '100%', gridArea: 'content', overflowX: 'hidden', overflowY: 'auto' }}>
+        {children}
+      </div>
     </div>
   );
 };

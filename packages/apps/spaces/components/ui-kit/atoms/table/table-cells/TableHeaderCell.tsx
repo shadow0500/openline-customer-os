@@ -1,15 +1,26 @@
 import styles from './table-cells.module.scss';
+import { FC, ReactNode } from 'react';
+import classNames from 'classnames';
 
-export const TableHeaderCell = ({
+interface TableHeaderCellProps {
+  label: string;
+  subLabel?: string;
+  children?: ReactNode;
+}
+
+export const TableHeaderCell: FC<TableHeaderCellProps> = ({
   label,
   subLabel,
-}: {
-  label: string;
-  subLabel: string;
+  children,
 }) => {
   return (
-    <div className={styles.header}>
-      <span>{label}</span>
+    <div
+      className={classNames(styles.header)}
+    >
+      <div className={classNames(styles.label)}>
+        {label}
+        {children && children}
+      </div>
       {subLabel && <span className={styles.subLabel}>{subLabel}</span>}
     </div>
   );

@@ -12,18 +12,17 @@ import (
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/generated"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/model"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/utils"
-	"github.com/sirupsen/logrus"
 )
 
 // ContactUpsertInEventStore is the resolver for the contactUpsertInEventStore field.
 func (r *mutationResolver) ContactUpsertInEventStore(ctx context.Context, size int) (int, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	result, _, err := r.Services.ContactService.UpsertInEventStore(ctx, size)
 	if err != nil {
-		logrus.Errorf("Failed to call method: %v", err)
+		r.log.Errorf("%s - Failed to call method: {%v}", utils.GetFunctionName(), err.Error())
 		graphql.AddErrorf(ctx, "Failed to upsert contacts to event store")
 	}
 
@@ -33,12 +32,12 @@ func (r *mutationResolver) ContactUpsertInEventStore(ctx context.Context, size i
 // ContactPhoneNumberRelationUpsertInEventStore is the resolver for the contactPhoneNumberRelationUpsertInEventStore field.
 func (r *mutationResolver) ContactPhoneNumberRelationUpsertInEventStore(ctx context.Context, size int) (int, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	result, _, err := r.Services.ContactService.UpsertPhoneNumberRelationInEventStore(ctx, size)
 	if err != nil {
-		logrus.Errorf("Failed to call method: %v", err)
+		r.log.Errorf("%s - Failed to call method: {%v}", utils.GetFunctionName(), err.Error())
 		graphql.AddErrorf(ctx, "Failed: {%s}", err)
 	}
 
@@ -48,7 +47,7 @@ func (r *mutationResolver) ContactPhoneNumberRelationUpsertInEventStore(ctx cont
 // UpsertInEventStore is the resolver for the UpsertInEventStore field.
 func (r *mutationResolver) UpsertInEventStore(ctx context.Context, size int) (*model.UpsertToEventStoreResult, error) {
 	defer func(start time.Time) {
-		utils.LogMethodExecution(start, utils.GetFunctionName())
+		utils.LogMethodExecutionWithZap(r.log.SugarLogger(), start, utils.GetFunctionName())
 	}(time.Now())
 
 	output := model.UpsertToEventStoreResult{}

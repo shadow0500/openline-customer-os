@@ -11,16 +11,15 @@ import {
   InMemoryCache,
 } from '@apollo/client';
 import { authLink } from '../../apollo-client';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import { organizationDetailsEdit } from '../../state';
+import { useRecoilState } from 'recoil';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { showLegacyEditor } from '../../state/editor';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { OrganizationDetailsSkeleton } from '@spaces/organization/organization-details/skeletons';
-import { OrganizationTimelineSkeleton } from '@spaces/organization/organization-timeline/skeletons';
 import { NoteEditorModes } from '@spaces/organization/editor/types';
 import { OrganizationContactsSkeleton } from '@spaces/organization/organization-contacts/skeletons';
+import { TimelineSkeleton } from '@spaces/organisms/timeline/skeletons/TimelineSkeleton';
+import { OrganizationLocations } from '@spaces/organization/organization-locations';
 
 // TODO add skeleton loader in options
 const OrganizationContacts = dynamic(
@@ -42,7 +41,7 @@ const OrganizationTimeline = dynamic(
   {
     ssr: true,
     loading: () => {
-      return <OrganizationTimelineSkeleton />;
+      return <TimelineSkeleton />;
     },
   },
 );
@@ -69,6 +68,7 @@ const OrganizationDetails = dynamic(
     },
   },
 );
+
 export async function getServerSideProps(context: NextPageContext) {
   const ssrClient = new ApolloClient({
     ssrMode: true,
@@ -89,36 +89,6 @@ export async function getServerSideProps(context: NextPageContext) {
   });
 
   const organizationId = context.query.id;
-  if (organizationId == 'new') {
-    // mutation
-    const {
-      data: { organization_Create },
-    } = await ssrClient.mutate({
-      mutation: gql`
-        mutation createOrganization {
-          organization_Create(input: { name: "" }) {
-            id
-          }
-        }
-      `,
-      context: {
-        headers: {
-          ...context?.req?.headers,
-        },
-      },
-    });
-
-    return {
-      redirect: {
-        permanent: false,
-        destination: `organization/${organization_Create?.id}`,
-      },
-      props: {
-        isEditMode: true,
-        id: organization_Create?.id,
-      },
-    };
-  }
 
   try {
     const res = await ssrClient.query({
@@ -143,7 +113,6 @@ export async function getServerSideProps(context: NextPageContext) {
     return {
       props: {
         name: res.data.organization.name || '',
-        isEditMode: !res.data.organization?.name.length,
         id: organizationId,
       },
     };
@@ -153,24 +122,16 @@ export async function getServerSideProps(context: NextPageContext) {
     };
   }
 }
+
 function OrganizationDetailsPage({
   id,
-  isEditMode,
   name,
 }: {
   id: string;
-  isEditMode: boolean;
   name: string;
 }) {
   const { push } = useRouter();
-  const setContactDetailsEdit = useSetRecoilState(organizationDetailsEdit);
   const [showEditor, setShowLegacyEditor] = useRecoilState(showLegacyEditor);
-  const [animateRef] = useAutoAnimate({
-    easing: 'ease-in',
-  });
-  useEffect(() => {
-    setContactDetailsEdit({ isEditMode });
-  }, [id, isEditMode]);
 
   useEffect(() => {
     return () => {
@@ -181,26 +142,27 @@ function OrganizationDetailsPage({
   return (
     <>
       <Head>
-        <title>{isEditMode ? 'Unnamed' : name}</title>
+        <title>{!name ? 'Unnamed' : name}</title>
       </Head>
-      <DetailsPageLayout onNavigateBack={() => push('/')}>
+      <DetailsPageLayout>
         <section className={styles.organizationIdCard}>
-          <OrganizationDetails id={id as string} />
+          <OrganizationDetails id={id} />
+          <OrganizationLocations id={id} />
         </section>
         <section className={styles.organizationDetails}>
-          <OrganizationContacts id={id as string} />
+          <OrganizationContacts id={id} />
         </section>
-        <section className={styles.notes} ref={animateRef}>
+        <section className={styles.notes}>
           {!showEditor && <OrginizationToolbelt organizationId={id} />}
           {showEditor && (
             <OrganizationEditor
-              organizationId={id as string}
+              organizationId={id}
               mode={NoteEditorModes.ADD}
             />
           )}
         </section>
         <section className={styles.timeline}>
-          <OrganizationTimeline id={id as string} />
+          <OrganizationTimeline id={id} />
         </section>
       </DetailsPageLayout>
     </>

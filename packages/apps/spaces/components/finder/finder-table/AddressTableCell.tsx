@@ -3,8 +3,6 @@ import { DashboardTableAddressCell } from '@spaces/atoms/table/table-cells/Table
 import { Button } from '@spaces/atoms/button';
 import { OverlayPanel } from '@spaces/atoms/overlay-panel';
 import styles from './finder-table.module.scss';
-import { useRecoilValue } from 'recoil';
-import { finderSearchTerm } from '../../../state';
 
 export const AddressTableCell = ({
   locations = [],
@@ -12,7 +10,6 @@ export const AddressTableCell = ({
   locations: Array<any>;
 }) => {
   const op = useRef(null);
-  const searchTern = useRecoilValue(finderSearchTerm);
 
   const locationsCount: number | undefined = locations.length;
   if (!locationsCount) {
@@ -26,23 +23,13 @@ export const AddressTableCell = ({
         locality={locations[0]?.locality}
         region={locations[0]?.region}
         name={locations[0]?.name}
-        highlight={searchTern}
+        rawAddress={locations[0]?.rawAddress}
+        // highlight={searchTern}
       />
     );
   }
 
-  const getMatchingLocation = () => {
-    return (
-      locations.find(
-        (location) =>
-          location?.locality.includes(searchTern) ||
-          location?.region.includes(searchTern) ||
-          location?.name.includes(searchTern),
-      ) || locations[0]
-    );
-  };
-
-  const displayedLocation = !searchTern ? locations[0] : getMatchingLocation();
+  const displayedLocation = locations[0];
 
   return (
     <div>
@@ -57,7 +44,8 @@ export const AddressTableCell = ({
           locality={displayedLocation?.locality}
           region={displayedLocation?.region}
           name={displayedLocation?.name}
-          highlight={searchTern}
+          {...displayedLocation}
+          // highlight={searchTern}
         />
         <span className={styles.showMoreLocationsIcon}>(...)</span>
       </Button>
@@ -72,14 +60,26 @@ export const AddressTableCell = ({
         }}
       >
         <ul className={styles.adressesList}>
-          {locations.map((data) => (
-            <DashboardTableAddressCell
-              key={data.id}
-              locality={data?.locality}
-              region={locations[0]?.region}
-              name={data?.name}
-            />
-          ))}
+          {locations
+            .filter(
+              (loc) =>
+                loc.rawAddress ||
+                loc.region ||
+                loc.country ||
+                loc.street ||
+                loc.postalCode ||
+                loc.houseNumber ||
+                loc.zip ||
+                loc.name,
+            )
+            .map((data) => (
+              <DashboardTableAddressCell
+                key={data.id}
+                locality={data?.locality}
+                region={locations[0]?.region}
+                {...data}
+              />
+            ))}
         </ul>
       </OverlayPanel>
     </div>

@@ -9,74 +9,49 @@ import { useRouter } from 'next/router';
 import { useRecoilValue } from 'recoil';
 import { logoutUrlState } from '../../../../state';
 import { useJune } from '@spaces/hooks/useJune';
+import User from '@spaces/atoms/icons/User';
 
-interface SidePanelProps {
-  onPanelToggle: (status: boolean) => void;
-  isPanelOpen: boolean;
-  children: React.ReactNode;
-}
-
-export const SidePanel: React.FC<SidePanelProps> = ({
-  onPanelToggle,
-  isPanelOpen,
-  children,
-}) => {
+export const SidePanel: React.FC = () => {
   const analytics = useJune();
   const router = useRouter();
   const logoutUrl = useRecoilValue(logoutUrlState);
-
   return (
     <>
-      <aside
-        className={classNames(styles.sidebar, {
-          [styles.collapse]: !isPanelOpen,
-        })}
-      >
-        <div
-          className={styles.logoNameWrapper}
-          role='button'
-          tabIndex={0}
-          onClick={() => onPanelToggle(!isPanelOpen)}
-        >
-          <Image
-            src='/logos/openline.svg'
-            alt='Openline'
-            width={120}
-            height={40}
-            className={styles.logoExpanded}
-          />
+      <aside className={styles.sidebar}>
+        <div className={styles.logoWrapper} role='button' tabIndex={0}>
           <Image
             src='/logos/openline_small.svg'
             alt='Openline'
-            width={40}
+            width={31}
             height={40}
-            className={styles.logoCollapsed}
+            className={styles.logo}
           />
         </div>
 
-        <ul className={styles.featuresList}>
-          <SidePanelListItem
-            label='Add organization'
-            isOpen={isPanelOpen}
-            icon={<Building height={24} width={24} />}
-            onClick={() => router.push('/organization/new')}
-          />
-          <SidePanelListItem
-            label='Add contact'
-            isOpen={isPanelOpen}
-            icon={<UserPlus height={24} width={24} />}
-            onClick={() => router.push('/contact/new')}
-          />
+        <SidePanelListItem
+          label='Contacts'
+          icon={<User height={24} width={24} />}
+          onClick={() => router.push('/contact')}
+          selected={router.asPath.startsWith('/contact')}
+        />
+        <SidePanelListItem
+          label='Organizations'
+          icon={<Building height={24} width={24} />}
+          onClick={() => router.push('/organization')}
+          selected={
+            router.asPath === '/' || router.asPath.startsWith('/organization')
+          }
+        />
+
+        <div className={styles.bottom}>
           <SidePanelListItem
             label='Settings'
-            isOpen={isPanelOpen}
             icon={<Cog height={24} width={24} />}
             onClick={() => router.push('/settings')}
+            selected={router.asPath.startsWith('/settings')}
           />
-
           <SidePanelListItem
             label='Log Out'
-            isOpen={isPanelOpen}
             icon={<SignOut height={24} width={24} />}
             onClick={() => {
               document.cookie =
@@ -85,15 +60,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               window.location.href = logoutUrl;
             }}
           />
-        </ul>
-        <div className={styles.webChat}>{children}</div>
+        </div>
       </aside>
-      {isPanelOpen && (
-        <div
-          className={styles.overlay}
-          onClick={() => onPanelToggle(!isPanelOpen)}
-        />
-      )}
     </>
   );
 };

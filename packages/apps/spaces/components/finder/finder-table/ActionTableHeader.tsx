@@ -1,53 +1,61 @@
-import React, { useRef } from 'react';
+import React, { FC, useRef } from 'react';
 import { useRecoilState } from 'recoil';
 import { selectedItemsIds, tableMode } from '../state';
 import { useMergeOrganizations } from '@spaces/hooks/useOrganization';
 import EllipsesV from '@spaces/atoms/icons/EllipsesV';
-import { Tooltip } from '@spaces/atoms/tooltip';
 import { Button } from '@spaces/atoms/button';
 import { IconButton } from '@spaces/atoms/icon-button/IconButton';
 import { OverlayPanel } from '@spaces/atoms/overlay-panel';
 import styles from './finder-table.module.scss';
 import { useMergeContacts } from '@spaces/hooks/useContact';
+import { useRouter } from 'next/router';
+import Check from '@spaces/atoms/icons/Check';
 
-export const ActionColumn = () => {
+interface ActionColumnProps {
+  onMerge: ({
+    primaryId,
+    mergeIds,
+  }: {
+    primaryId: string;
+    mergeIds: Array<string>;
+  }) => void;
+  actions: Array<{
+    label: string;
+    command: () => void;
+  }>;
+}
+export const ActionColumn: FC<ActionColumnProps> = ({ onMerge, actions }) => {
   const op = useRef(null);
   const [mode, setMode] = useRecoilState(tableMode);
   const [selectedItems, setSelectedItems] = useRecoilState(selectedItemsIds);
-  const { onMergeOrganizations } = useMergeOrganizations();
-  const { onMergeContacts } = useMergeContacts();
 
   const handleSave = async () => {
     const [primaryId, ...mergeIds] = selectedItems;
-    return mode === 'MERGE_CONTACT'
-      ? onMergeContacts({
-          primaryContactId: primaryId,
-          mergedContactIds: mergeIds,
-        })
-      : onMergeOrganizations({
-          primaryOrganizationId: primaryId,
-          mergedOrganizationIds: mergeIds,
-        });
+    return onMerge({ primaryId, mergeIds });
   };
 
-  if (mode === 'MERGE_ORG' || mode === 'MERGE_CONTACT') {
+  if (mode === 'MERGE') {
     if (selectedItems.length > 1) {
       return (
-        <Button mode='primary' onClick={handleSave}>
-          Merge
-        </Button>
+        <div className={styles.actionHeader}>
+          <Button mode='primary' onClick={handleSave}>
+            Merge
+          </Button>
+        </div>
       );
     }
     return (
-      <Button
-        mode='secondary'
-        onClick={() => {
-          setMode('PREVIEW');
-          setSelectedItems([]);
-        }}
-      >
-        Done
-      </Button>
+      <div className={styles.actionHeader}>
+        <IconButton
+          mode='secondary'
+          onClick={() => {
+            setMode('PREVIEW');
+            setSelectedItems([]);
+          }}
+          label='Done'
+          icon={<Check height={24} />}
+        ></IconButton>
+      </div>
     );
   }
 
@@ -58,10 +66,16 @@ export const ActionColumn = () => {
         className={styles.actionsMenuButton}
         id={'finder-actions-dropdown-button'}
         mode='secondary'
-        size={'xxxs'}
+        size='xxxxs'
         //@ts-expect-error revisit
         onClick={(e) => op?.current?.toggle(e)}
-        icon={<EllipsesV style={{ transform: 'rotate(90deg)' }} />}
+        icon={
+          <EllipsesV
+            height={24}
+            width={24}
+            style={{ transform: 'rotate(90deg)' }}
+          />
+        }
       />
 
       <OverlayPanel
@@ -73,20 +87,7 @@ export const ActionColumn = () => {
           overflowY: 'auto',
           bottom: 0,
         }}
-        model={[
-          {
-            label: 'Merge organizations',
-            command() {
-              return setMode('MERGE_ORG');
-            },
-          },
-          {
-            label: 'Merge contacts',
-            command() {
-              return setMode('MERGE_CONTACT');
-            },
-          },
-        ]}
+        model={actions}
       />
     </div>
   );

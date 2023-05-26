@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/grpc_client"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/logger"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/repository"
 	commonService "github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/service"
 )
@@ -39,44 +40,47 @@ type Services struct {
 	MeetingService             MeetingService
 	TenantService              TenantService
 	WorkspaceService           WorkspaceService
+	SocialService              SocialService
+	PlayerService              PlayerService
 }
 
-func InitServices(driver *neo4j.DriverWithContext, commonServices *commonService.Services, grpcClients *grpc_client.Clients) *Services {
+func InitServices(log logger.Logger, driver *neo4j.DriverWithContext, commonServices *commonService.Services, grpcClients *grpc_client.Clients) *Services {
 	repositories := repository.InitRepos(driver)
 
 	services := Services{
-		CommonServices: commonServices,
-
-		ContactService:             NewContactService(repositories, grpcClients),
-		OrganizationService:        NewOrganizationService(repositories, grpcClients),
-		CustomFieldService:         NewCustomFieldService(repositories),
-		PhoneNumberService:         NewPhoneNumberService(repositories, grpcClients),
-		EmailService:               NewEmailService(repositories),
-		UserService:                NewUserService(repositories, grpcClients),
-		FieldSetService:            NewFieldSetService(repositories),
-		EntityTemplateService:      NewEntityTemplateService(repositories),
-		FieldSetTemplateService:    NewFieldSetTemplateService(repositories),
-		CustomFieldTemplateService: NewCustomFieldTemplateService(repositories),
-		ConversationService:        NewConversationService(repositories),
-		OrganizationTypeService:    NewOrganizationTypeService(repositories),
-		JobRoleService:             NewJobRoleService(repositories),
-		LocationService:            NewLocationService(repositories),
-		TagService:                 NewTagService(repositories),
-		DomainService:              NewDomainService(repositories),
-		IssueService:               NewIssueService(repositories),
-		PageViewService:            NewPageViewService(repositories),
-		AttachmentService:          NewAttachmentService(repositories),
-		TenantService:              NewTenantService(repositories),
-		WorkspaceService:           NewWorkspaceService(repositories),
+		CommonServices:             commonServices,
+		ContactService:             NewContactService(log, repositories, grpcClients),
+		OrganizationService:        NewOrganizationService(log, repositories, grpcClients),
+		CustomFieldService:         NewCustomFieldService(log, repositories),
+		PhoneNumberService:         NewPhoneNumberService(log, repositories, grpcClients),
+		EmailService:               NewEmailService(log, repositories),
+		UserService:                NewUserService(log, repositories, grpcClients),
+		FieldSetService:            NewFieldSetService(log, repositories),
+		EntityTemplateService:      NewEntityTemplateService(log, repositories),
+		FieldSetTemplateService:    NewFieldSetTemplateService(log, repositories),
+		CustomFieldTemplateService: NewCustomFieldTemplateService(log, repositories),
+		ConversationService:        NewConversationService(log, repositories),
+		OrganizationTypeService:    NewOrganizationTypeService(log, repositories),
+		JobRoleService:             NewJobRoleService(log, repositories),
+		LocationService:            NewLocationService(log, repositories),
+		TagService:                 NewTagService(log, repositories),
+		DomainService:              NewDomainService(log, repositories),
+		IssueService:               NewIssueService(log, repositories),
+		PageViewService:            NewPageViewService(log, repositories),
+		AttachmentService:          NewAttachmentService(log, repositories),
+		TenantService:              NewTenantService(log, repositories),
+		WorkspaceService:           NewWorkspaceService(log, repositories),
+		SocialService:              NewSocialService(log, repositories),
 	}
-	services.NoteService = NewNoteService(repositories, &services)
-	services.TimelineEventService = NewTimelineEventService(repositories, &services)
-	services.SearchService = NewSearchService(repositories, &services)
-	services.QueryService = NewQueryService(repositories, &services)
-	services.InteractionEventService = NewInteractionEventService(repositories, &services)
-	services.InteractionSessionService = NewInteractionSessionService(repositories, &services)
-	services.AnalysisService = NewAnalysisService(repositories, &services)
-	services.MeetingService = NewMeetingService(repositories, &services)
+	services.NoteService = NewNoteService(log, repositories, &services)
+	services.TimelineEventService = NewTimelineEventService(log, repositories, &services)
+	services.SearchService = NewSearchService(log, repositories, &services)
+	services.QueryService = NewQueryService(log, repositories, &services)
+	services.InteractionEventService = NewInteractionEventService(log, repositories, &services)
+	services.InteractionSessionService = NewInteractionSessionService(log, repositories, &services)
+	services.AnalysisService = NewAnalysisService(log, repositories, &services)
+	services.MeetingService = NewMeetingService(log, repositories, &services)
+	services.PlayerService = NewPlayerService(repositories, &services)
 
 	return &services
 }

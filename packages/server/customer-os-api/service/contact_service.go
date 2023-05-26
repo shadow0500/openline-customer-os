@@ -9,10 +9,10 @@ import (
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/entity"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/model"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/grpc_client"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/logger"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/repository"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/utils"
 	contact_grpc_service "github.com/openline-ai/openline-customer-os/packages/server/events-processing-common/gen/proto/go/api/grpc/v1/contact"
-	"github.com/sirupsen/logrus"
 	"reflect"
 )
 
@@ -65,12 +65,14 @@ type ContactUpdateData struct {
 }
 
 type contactService struct {
+	log          logger.Logger
 	repositories *repository.Repositories
 	grpcClients  *grpc_client.Clients
 }
 
-func NewContactService(repositories *repository.Repositories, grpcClients *grpc_client.Clients) ContactService {
+func NewContactService(log logger.Logger, repositories *repository.Repositories, grpcClients *grpc_client.Clients) ContactService {
 	return &contactService{
+		log:          log,
 		repositories: repositories,
 		grpcClients:  grpcClients,
 	}
@@ -94,7 +96,7 @@ func (s *contactService) Create(ctx context.Context, newContact *ContactCreateDa
 func (s *contactService) createContactInDBTxWork(ctx context.Context, newContact *ContactCreateData) func(tx neo4j.ManagedTransaction) (any, error) {
 	return func(tx neo4j.ManagedTransaction) (any, error) {
 		tenant := common.GetContext(ctx).Tenant
-		contactDbNode, err := s.repositories.ContactRepository.Create(ctx, tx, tenant, *newContact.ContactEntity, newContact.Source, newContact.SourceOfTruth)
+		contactDbNode, err := s.repositories.ContactRepository.Create(ctx, tx, tenant, *newContact.ContactEntity)
 		if err != nil {
 			return nil, err
 		}
@@ -402,12 +404,12 @@ func (s *contactService) Merge(ctx context.Context, primaryContactId, mergedCont
 
 	_, err := s.GetContactById(ctx, primaryContactId)
 	if err != nil {
-		logrus.Errorf("Primary contact with id %s not found: %v", primaryContactId, err)
+		s.log.Errorf("(%s) Primary contact with id {%s} not found: {%v}", utils.GetFunctionName(), primaryContactId, err.Error())
 		return err
 	}
 	_, err = s.GetContactById(ctx, mergedContactId)
 	if err != nil {
-		logrus.Errorf("Contact to merge with id %s not found: %v", mergedContactId, err)
+		s.log.Errorf("(%s) Contact to merge with id {%s} not found: {%v}", utils.GetFunctionName(), mergedContactId, err.Error())
 		return err
 	}
 
@@ -525,7 +527,7 @@ func (s *contactService) UpsertInEventStore(ctx context.Context, size int) (int,
 				if outputErr != nil {
 					outputErr = err
 				}
-				logrus.Errorf("Failed to call method: %v", err)
+				s.log.Errorf("(%s) Failed to call method: {%v}", utils.GetFunctionName(), err.Error())
 			} else {
 				processedRecords++
 			}
@@ -563,7 +565,7 @@ func (s *contactService) UpsertPhoneNumberRelationInEventStore(ctx context.Conte
 				if outputErr != nil {
 					outputErr = err
 				}
-				logrus.Errorf("Failed to call method: %v", err)
+				s.log.Errorf("(%s) Failed to call method: {%v}", utils.GetFunctionName(), err.Error())
 			} else {
 				processedRecords++
 			}
@@ -601,7 +603,7 @@ func (s *contactService) UpsertEmailRelationInEventStore(ctx context.Context, si
 				if outputErr != nil {
 					outputErr = err
 				}
-				logrus.Errorf("Failed to call method: %v", err)
+				s.log.Errorf("(%s) Failed to call method: {%v}", utils.GetFunctionName(), err.Error())
 			} else {
 				processedRecords++
 			}
@@ -620,6 +622,7 @@ func (s *contactService) mapDbNodeToContactEntity(dbNode dbtype.Node) *entity.Co
 		FirstName:     utils.GetStringPropOrEmpty(props, "firstName"),
 		LastName:      utils.GetStringPropOrEmpty(props, "lastName"),
 		Name:          utils.GetStringPropOrEmpty(props, "name"),
+		Description:   utils.GetStringPropOrEmpty(props, "description"),
 		Prefix:        utils.GetStringPropOrEmpty(props, "prefix"),
 		CreatedAt:     utils.ToPtr(utils.GetTimePropOrEpochStart(props, "createdAt")),
 		UpdatedAt:     utils.GetTimePropOrEpochStart(props, "updatedAt"),

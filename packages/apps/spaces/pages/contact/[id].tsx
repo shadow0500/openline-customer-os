@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { DetailsPageLayout } from '@spaces/layouts/details-page-layout';
 import styles from './contact.module.scss';
 import { useRouter } from 'next/router';
-import { useRecoilState, useSetRecoilState } from 'recoil';
-import { contactDetailsEdit } from '../../state';
+import { useRecoilState } from 'recoil';
 import { authLink } from '../../apollo-client';
 import {
   ApolloClient,
@@ -14,14 +13,14 @@ import {
 } from '@apollo/client';
 import { NextPageContext } from 'next';
 import Head from 'next/head';
-import { getContactPageTitle } from '../../utils';
+import { getContactPageTitle } from '../../utils/getContactPageTitle';
 import { Contact } from '../../graphQL/__generated__/generated';
 import { showLegacyEditor } from '../../state/editor';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
 import dynamic from 'next/dynamic';
 import { ContactToolbelt } from '@spaces/contact/contact-toolbelt/ContactToolbelt';
 import { ContactDetails } from '@spaces/contact/contact-details/ContactDetails';
 import { ContactCommunicationDetails } from '@spaces/contact/contact-communication-details/ContactCommunicationDetails';
+import { ContactLocations } from '@spaces/contact/contact-locations';
 
 const ContactHistory = dynamic(
   () =>
@@ -38,6 +37,7 @@ const ContactEditor = dynamic(
     ),
   { ssr: false },
 );
+
 export async function getServerSideProps(context: NextPageContext) {
   const ssrClient = new ApolloClient({
     ssrMode: true,
@@ -57,38 +57,6 @@ export async function getServerSideProps(context: NextPageContext) {
     credentials: 'include',
   });
   const contactId = context.query.id;
-  if (contactId == 'new') {
-    // mutation
-    const {
-      data: { contact_Create },
-    } = await ssrClient.mutate({
-      mutation: gql`
-        mutation createContact {
-          contact_Create(input: { firstName: "", lastName: "" }) {
-            id
-            firstName
-            lastName
-          }
-        }
-      `,
-      context: {
-        headers: {
-          ...context?.req?.headers,
-        },
-      },
-    });
-
-    return {
-      redirect: {
-        permanent: false,
-        destination: `/contact/${contact_Create?.id}`,
-      },
-      props: {
-        isEditMode: true,
-        id: contact_Create?.id,
-      },
-    };
-  }
 
   try {
     const res = await ssrClient.query({
@@ -128,10 +96,6 @@ export async function getServerSideProps(context: NextPageContext) {
 
     return {
       props: {
-        isEditMode:
-          !contact?.firstName?.length &&
-          !contact?.lastName?.length &&
-          !contact?.name?.length,
         id: contactId,
         contact,
       },
@@ -142,24 +106,10 @@ export async function getServerSideProps(context: NextPageContext) {
     };
   }
 }
-function ContactDetailsPage({
-  id,
-  isEditMode,
-  contact,
-}: {
-  id: string;
-  isEditMode: boolean;
-  contact: Contact;
-}) {
+function ContactDetailsPage({ id, contact }: { id: string; contact: Contact }) {
   const { push } = useRouter();
   const [showEditor, setShowLegacyEditor] = useRecoilState(showLegacyEditor);
-  const [animateRef] = useAutoAnimate({
-    easing: 'ease-in',
-  });
-  const setContactDetailsEdit = useSetRecoilState(contactDetailsEdit);
-  useEffect(() => {
-    setContactDetailsEdit({ isEditMode });
-  }, [id, isEditMode]);
+
   useEffect(() => {
     return () => {
       setShowLegacyEditor(false);
@@ -171,15 +121,16 @@ function ContactDetailsPage({
       <Head>
         <title> {getContactPageTitle(contact)}</title>
       </Head>
-      <DetailsPageLayout onNavigateBack={() => push('/')}>
+      <DetailsPageLayout>
         <section className={styles.details}>
-          <ContactDetails id={id as string} />
-          <ContactCommunicationDetails id={id as string} />
+          <ContactDetails id={id} />
+          <ContactCommunicationDetails id={id} />
+          <ContactLocations id={id} />
         </section>
         <section className={styles.timeline}>
-          <ContactHistory id={id as string} />
+          <ContactHistory id={id} />
         </section>
-        <section ref={animateRef} className={styles.notes}>
+        <section className={styles.notes}>
           {!showEditor && (
             <ContactToolbelt contactId={id} isSkewed={!showEditor} />
           )}

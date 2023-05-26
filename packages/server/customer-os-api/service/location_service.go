@@ -6,6 +6,8 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/dbtype"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/common"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/entity"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/errors"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/logger"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/repository"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/utils"
 )
@@ -15,14 +17,18 @@ type LocationService interface {
 	GetAllForContacts(ctx context.Context, contactIds []string) (*entity.LocationEntities, error)
 	GetAllForOrganization(ctx context.Context, organizationId string) (*entity.LocationEntities, error)
 	GetAllForOrganizations(ctx context.Context, organizationIds []string) (*entity.LocationEntities, error)
+	CreateLocationForEntity(ctx context.Context, entityType entity.EntityType, entityId string, source entity.SourceFields) (*entity.LocationEntity, error)
+	Update(ctx context.Context, entity entity.LocationEntity) (*entity.LocationEntity, error)
 }
 
 type locationService struct {
+	log          logger.Logger
 	repositories *repository.Repositories
 }
 
-func NewLocationService(repositories *repository.Repositories) LocationService {
+func NewLocationService(log logger.Logger, repositories *repository.Repositories) LocationService {
 	return &locationService{
+		log:          log,
 		repositories: repositories,
 	}
 }
@@ -85,6 +91,25 @@ func (s *locationService) GetAllForOrganizations(ctx context.Context, organizati
 	return &locationEntities, nil
 }
 
+func (s *locationService) CreateLocationForEntity(ctx context.Context, entityType entity.EntityType, entityId string, source entity.SourceFields) (*entity.LocationEntity, error) {
+	if entityType != entity.CONTACT && entityType != entity.ORGANIZATION && entityType != entity.MEETING {
+		return nil, errors.ErrInvalidEntityType
+	}
+	locationNode, err := s.repositories.LocationRepository.CreateLocationForEntity(ctx, common.GetTenantFromContext(ctx), entityType, entityId, source)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapDbNodeToLocationEntity(*locationNode), nil
+}
+
+func (s *locationService) Update(ctx context.Context, entity entity.LocationEntity) (*entity.LocationEntity, error) {
+	updatedLocationNode, err := s.repositories.LocationRepository.Update(ctx, common.GetTenantFromContext(ctx), entity)
+	if err != nil {
+		return nil, err
+	}
+	return s.mapDbNodeToLocationEntity(*updatedLocationNode), nil
+}
+
 func (s *locationService) mapDbNodeToLocationEntity(node dbtype.Node) *entity.LocationEntity {
 	props := utils.GetPropsFromNode(node)
 	result := entity.LocationEntity{
@@ -109,6 +134,8 @@ func (s *locationService) mapDbNodeToLocationEntity(node dbtype.Node) *entity.Lo
 		RawAddress:    utils.GetStringPropOrEmpty(props, "rawAddress"),
 		Latitude:      utils.GetFloatPropOrNil(props, "latitude"),
 		Longitude:     utils.GetFloatPropOrNil(props, "longitude"),
+		TimeZone:      utils.GetStringPropOrEmpty(props, "timeZone"),
+		UtcOffset:     utils.GetInt64PropOrZero(props, "utcOffset"),
 		Source:        entity.GetDataSource(utils.GetStringPropOrEmpty(props, "source")),
 		SourceOfTruth: entity.GetDataSource(utils.GetStringPropOrEmpty(props, "sourceOfTruth")),
 		AppSource:     utils.GetStringPropOrEmpty(props, "appSource"),

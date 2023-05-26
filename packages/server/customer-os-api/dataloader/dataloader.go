@@ -34,6 +34,7 @@ type Loaders struct {
 	NotedEntitiesForNote                        *dataloader.Loader
 	UsersForEmail                               *dataloader.Loader
 	UsersForPhoneNumber                         *dataloader.Loader
+	UsersForPlayer                              *dataloader.Loader
 	ContactsForEmail                            *dataloader.Loader
 	ContactsForPhoneNumber                      *dataloader.Loader
 	OrganizationsForEmail                       *dataloader.Loader
@@ -50,6 +51,8 @@ type Loaders struct {
 	AttachmentsForInteractionEvent              *dataloader.Loader
 	AttachmentsForInteractionSession            *dataloader.Loader
 	AttachmentsForMeeting                       *dataloader.Loader
+	SocialsForContact                           *dataloader.Loader
+	SocialsForOrganization                      *dataloader.Loader
 }
 
 type tagBatcher struct {
@@ -60,6 +63,9 @@ type emailBatcher struct {
 }
 type locationBatcher struct {
 	locationService service.LocationService
+}
+type socialBatcher struct {
+	socialService service.SocialService
 }
 type jobRoleBatcher struct {
 	jobRoleService service.JobRoleService
@@ -97,15 +103,12 @@ type contactBatcher struct {
 type organizationBatcher struct {
 	organizationService service.OrganizationService
 }
-
 type analysisBatcher struct {
 	analysisService service.AnalysisService
 }
-
 type noteBatcher struct {
 	noteService service.NoteService
 }
-
 type attachmentBatcher struct {
 	attachmentService service.AttachmentService
 }
@@ -120,6 +123,9 @@ func NewDataLoader(services *service.Services) *Loaders {
 	}
 	locationBatcher := &locationBatcher{
 		locationService: services.LocationService,
+	}
+	socialBatcher := &socialBatcher{
+		socialService: services.SocialService,
 	}
 	jobRoleBatcher := &jobRoleBatcher{
 		jobRoleService: services.JobRoleService,
@@ -193,6 +199,7 @@ func NewDataLoader(services *service.Services) *Loaders {
 		NotedEntitiesForNote:                        dataloader.NewBatchedLoader(notedEntityBatcher.getNotedEntitiesForNotes, dataloader.WithClearCacheOnBatch()),
 		UsersForEmail:                               dataloader.NewBatchedLoader(userBatcher.getUsersForEmails, dataloader.WithClearCacheOnBatch()),
 		UsersForPhoneNumber:                         dataloader.NewBatchedLoader(userBatcher.getUsersForPhoneNumbers, dataloader.WithClearCacheOnBatch()),
+		UsersForPlayer:                              dataloader.NewBatchedLoader(userBatcher.getUsersForPlayers, dataloader.WithClearCacheOnBatch()),
 		ContactsForEmail:                            dataloader.NewBatchedLoader(contactBatcher.getContactsForEmails, dataloader.WithClearCacheOnBatch()),
 		ContactsForPhoneNumber:                      dataloader.NewBatchedLoader(contactBatcher.getContactsForPhoneNumbers, dataloader.WithClearCacheOnBatch()),
 		OrganizationsForEmail:                       dataloader.NewBatchedLoader(organizationBatcher.getOrganizationsForEmails, dataloader.WithClearCacheOnBatch()),
@@ -205,6 +212,8 @@ func NewDataLoader(services *service.Services) *Loaders {
 		AttachmentsForInteractionEvent:              dataloader.NewBatchedLoader(attachmentBatcher.getAttachmentsForInteractionEvents, dataloader.WithClearCacheOnBatch()),
 		AttachmentsForInteractionSession:            dataloader.NewBatchedLoader(attachmentBatcher.getAttachmentsForInteractionSessions, dataloader.WithClearCacheOnBatch()),
 		AttachmentsForMeeting:                       dataloader.NewBatchedLoader(attachmentBatcher.getAttachmentsForMeetings, dataloader.WithClearCacheOnBatch()),
+		SocialsForContact:                           dataloader.NewBatchedLoader(socialBatcher.getSocialsForContacts, dataloader.WithClearCacheOnBatch()),
+		SocialsForOrganization:                      dataloader.NewBatchedLoader(socialBatcher.getSocialsForOrganizations, dataloader.WithClearCacheOnBatch()),
 	}
 }
 

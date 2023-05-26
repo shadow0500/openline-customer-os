@@ -17,6 +17,8 @@ extend type Query {
     - PREFIX
     - FIRST_NAME
     - LAST_NAME
+    - NAME
+    - DESCRIPTION
     - CREATED_AT
     """
     contacts(pagination: Pagination, where: Filter, sort: [SortBy!]): ContactsPage!
@@ -37,6 +39,9 @@ extend type Mutation {
 
     contact_AddOrganizationById(input: ContactOrganizationInput!): Contact!
     contact_RemoveOrganizationById(input: ContactOrganizationInput!): Contact!
+
+    contact_AddNewLocation(contactId: ID!): Location!
+    contact_AddSocial(contactId: ID!, input: SocialInput!): Social!
 }
 
 """
@@ -69,6 +74,7 @@ type Contact implements ExtensibleEntity & Node {
     The last name of the contact in customerOS.
     """
     lastName: String
+    description: String
 
     """
     An ISO8601 timestamp recording when the contact was created in customerOS.
@@ -110,6 +116,7 @@ type Contact implements ExtensibleEntity & Node {
     **Required.  If no values it returns an empty array.**
     """
     locations: [Location!]! @goField(forceResolver: true)
+    socials: [Social!]! @goField(forceResolver: true)
 
     """
     User defined metadata appended to the contact record in customerOS.
@@ -184,6 +191,7 @@ input ContactInput {
     The last name of the contact.
     """
     lastName: String
+    description: String
 
     label: String @deprecated(reason: "Use `tags` instead")
 
@@ -233,6 +241,7 @@ input ContactUpdateInput {
     The first name of the contact in customerOS.
     """
     firstName: String
+    description: String
 
     """
     The last name of the contact in customerOS.

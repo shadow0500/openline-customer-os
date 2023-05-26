@@ -3,9 +3,7 @@ import {
   useGetOrganizationMentionSuggestionsLazyQuery,
   GetOrganizationMentionSuggestionsQueryVariables,
 } from './types';
-import {
-  ComparisonOperator,
-} from '../../graphQL/__generated__/generated';
+import { ComparisonOperator } from '../../graphQL/__generated__/generated';
 import { toast } from 'react-toastify';
 
 interface Result {
@@ -41,7 +39,7 @@ export const useOrganizationSuggestionsList = (): Result => {
         });
         if (response?.data) {
           return (response.data?.organizations?.content || []).map((e) => ({
-            label: e.id,
+            label: e.name,
             value: e.id,
           }));
         }

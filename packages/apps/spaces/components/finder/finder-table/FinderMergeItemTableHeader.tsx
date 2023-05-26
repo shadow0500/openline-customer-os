@@ -4,30 +4,36 @@ import { IconButton } from '@spaces/atoms/icon-button/IconButton';
 import { useRecoilValue, useResetRecoilState } from 'recoil';
 import { selectedItemsIds, tableMode } from '../state';
 import styles from './finder-table.module.scss';
+import Times from '@spaces/atoms/icons/Times';
+
 export const FinderMergeItemTableHeader: React.FC<{
-  mergeMode: 'MERGE_ORG' | 'MERGE_CONTACT';
   label: string;
   subLabel: string;
-}> = ({ mergeMode, label, subLabel }) => {
+  children: React.ReactNode
+}> = ({ label, subLabel,  children }) => {
   const resetSelectedItems = useResetRecoilState(selectedItemsIds);
   const mode = useRecoilValue(tableMode);
   const selectedIds = useRecoilValue(selectedItemsIds);
 
   return (
     <div style={{ display: 'flex' }}>
-      <div className={styles.checkboxContainer}>
-        {mode === mergeMode && !!selectedIds.length && (
-          <IconButton
-            size='xxxs'
-            label='Deselect all items'
-            className={styles.deselectAllButton}
-            mode='dangerLink'
-            onClick={resetSelectedItems}
-          />
-        )}
-      </div>
+      {mode === 'MERGE' && !!selectedIds.length && (
+        <IconButton
+          size='xxxs'
+          label='Deselect all items'
+          className={styles.deselectAllButton}
+          mode='dangerLink'
+          icon={<Times height={14} width={14} />}
+          onClick={resetSelectedItems}
+        />
+      )}
       <div className={styles.finderCell}>
-        <TableHeaderCell label={label} subLabel={subLabel} />
+        <TableHeaderCell
+          label={label}
+          subLabel={subLabel}
+        >
+          {children}
+        </TableHeaderCell>
       </div>
     </div>
   );

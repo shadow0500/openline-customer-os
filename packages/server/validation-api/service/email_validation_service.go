@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/openline-ai/openline-customer-os/packages/server/validation-api/config"
 	"github.com/openline-ai/openline-customer-os/packages/server/validation-api/dto"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 )
@@ -30,20 +33,40 @@ func (s *emailValidationService) ValidateEmail(ctx context.Context, email string
 	message := map[string]string{"to_email": email}
 	bytesRepresentation, _ := json.Marshal(message)
 
-	resp, _ := http.Post(s.config.ReacherApiPath, "application/json", bytes.NewBuffer(bytesRepresentation))
+	client := http.Client{}
+	// Create the request
+	req, err := http.NewRequest("POST", s.config.ReacherApiPath, bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		logrus.Printf("Error on creating request: %v", err.Error())
+		return nil, err
+	}
+	req.Header.Set("x-reacher-secret", s.config.ReacherSecret)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		logrus.Printf("Error on sending request: %v", err.Error())
+		return nil, err
+	}
+	// Process the response
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		logrus.Printf("Error on reading response: %v", err.Error())
 		return nil, err
 	}
+	if resp.StatusCode == 200 {
+		d := new(dto.RancherEmailResponseDTO)
 
-	d := new(dto.RancherEmailResponseDTO)
-
-	err = json.Unmarshal([]byte(body), &d)
-	if err != nil {
-		return nil, err
+		err = json.Unmarshal(body, &d)
+		if err != nil {
+			logrus.Printf("Error on unmarshal body: %v", err.Error())
+			return nil, err
+		}
+		return d, nil
+	} else {
+		return nil, errors.New(fmt.Sprintf("validation error: %s", body))
 	}
-
-	return d, nil
 }

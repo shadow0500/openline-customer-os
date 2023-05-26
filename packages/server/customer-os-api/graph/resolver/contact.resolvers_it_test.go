@@ -3,9 +3,11 @@ package resolver
 import (
 	"context"
 	"github.com/99designs/gqlgen/client"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/constants"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/entity"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/model"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/repository"
+	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/test"
 	neo4jt "github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/test/neo4j"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/utils/decode"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-common-module/utils"
@@ -112,6 +114,7 @@ func TestMutationResolver_ContactCreate(t *testing.T) {
 	require.Equal(t, "MR", *contact.Contact_Create.Prefix)
 	require.Equal(t, "first", *contact.Contact_Create.FirstName)
 	require.Equal(t, "last", *contact.Contact_Create.LastName)
+	require.Equal(t, "Some description", *contact.Contact_Create.Description)
 	require.Equal(t, model.DataSourceOpenline, contact.Contact_Create.Source)
 
 	require.Equal(t, 5, len(contact.Contact_Create.CustomFields))
@@ -348,7 +351,7 @@ func TestMutationResolver_ContactCreate_WithExternalReference(t *testing.T) {
 	assertNeo4jLabels(ctx, t, driver, []string{"Tenant", "User", "User_" + tenantName, "Contact", "Contact_" + tenantName, "ExternalSystem", "ExternalSystem_" + tenantName})
 }
 
-func TestMutationResolver_UpdateContact(t *testing.T) {
+func TestMutationResolver_ContactUpdate(t *testing.T) {
 	ctx := context.TODO()
 	defer tearDownTestCase(ctx)(t)
 	neo4jt.CreateTenant(ctx, driver, tenantName)
@@ -358,6 +361,7 @@ func TestMutationResolver_UpdateContact(t *testing.T) {
 		Prefix:        "MR",
 		FirstName:     "first",
 		LastName:      "last",
+		Description:   "description",
 		Source:        entity.DataSourceHubspot,
 		SourceOfTruth: entity.DataSourceHubspot,
 	})
@@ -380,6 +384,7 @@ func TestMutationResolver_UpdateContact(t *testing.T) {
 	require.Equal(t, "DR", *updatedContact.Prefix)
 	require.Equal(t, "updated first", *updatedContact.FirstName)
 	require.Equal(t, "updated last", *updatedContact.LastName)
+	require.Equal(t, "updated description", *updatedContact.Description)
 	require.Equal(t, "test", *updatedContact.AppSource)
 	require.Equal(t, model.DataSourceOpenline, updatedContact.SourceOfTruth)
 	require.Equal(t, newOwnerId, updatedContact.Owner.ID)
@@ -392,7 +397,7 @@ func TestMutationResolver_UpdateContact(t *testing.T) {
 	assertNeo4jLabels(ctx, t, driver, []string{"Tenant", "Contact", "Contact_" + tenantName, "User", "User_" + tenantName})
 }
 
-func TestMutationResolver_UpdateContact_ClearTitle(t *testing.T) {
+func TestMutationResolver_ContactUpdate_ClearTitle(t *testing.T) {
 	ctx := context.TODO()
 	defer tearDownTestCase(ctx)(t)
 	neo4jt.CreateTenant(ctx, driver, tenantName)
@@ -693,6 +698,8 @@ func TestQueryResolver_Contact_WithLocations_ById(t *testing.T) {
 		District:     "testDistrict",
 		Street:       "testStreet",
 		RawAddress:   "testRawAddress",
+		UtcOffset:    1,
+		TimeZone:     "paris",
 		Latitude:     utils.ToPtr(float64(0.001)),
 		Longitude:    utils.ToPtr(float64(-2.002)),
 	})
@@ -734,11 +741,11 @@ func TestQueryResolver_Contact_WithLocations_ById(t *testing.T) {
 	}
 
 	require.Equal(t, locationId1, locationWithAddressDtls.ID)
-	require.Equal(t, "WORK", locationWithAddressDtls.Name)
+	require.Equal(t, "WORK", *locationWithAddressDtls.Name)
 	require.NotNil(t, locationWithAddressDtls.CreatedAt)
 	require.NotNil(t, locationWithAddressDtls.UpdatedAt)
-	require.Equal(t, "test", *locationWithAddressDtls.AppSource)
-	require.Equal(t, model.DataSourceOpenline, *locationWithAddressDtls.Source)
+	require.Equal(t, "test", locationWithAddressDtls.AppSource)
+	require.Equal(t, model.DataSourceOpenline, locationWithAddressDtls.Source)
 	require.Equal(t, "testCountry", *locationWithAddressDtls.Country)
 	require.Equal(t, "testLocality", *locationWithAddressDtls.Locality)
 	require.Equal(t, "testRegion", *locationWithAddressDtls.Region)
@@ -754,15 +761,17 @@ func TestQueryResolver_Contact_WithLocations_ById(t *testing.T) {
 	require.Equal(t, "testDistrict", *locationWithAddressDtls.District)
 	require.Equal(t, "testStreet", *locationWithAddressDtls.Street)
 	require.Equal(t, "testRawAddress", *locationWithAddressDtls.RawAddress)
+	require.Equal(t, "paris", *locationWithAddressDtls.TimeZone)
+	require.Equal(t, int64(1), *locationWithAddressDtls.UtcOffset)
 	require.Equal(t, float64(0.001), *locationWithAddressDtls.Latitude)
 	require.Equal(t, float64(-2.002), *locationWithAddressDtls.Longitude)
 
 	require.Equal(t, locationId2, locationWithoutAddressDtls.ID)
-	require.Equal(t, "UNKNOWN", locationWithoutAddressDtls.Name)
+	require.Equal(t, "UNKNOWN", *locationWithoutAddressDtls.Name)
 	require.NotNil(t, locationWithoutAddressDtls.CreatedAt)
 	require.NotNil(t, locationWithoutAddressDtls.UpdatedAt)
-	require.Equal(t, "test", *locationWithoutAddressDtls.AppSource)
-	require.Equal(t, model.DataSourceOpenline, *locationWithoutAddressDtls.Source)
+	require.Equal(t, "test", locationWithoutAddressDtls.AppSource)
+	require.Equal(t, model.DataSourceOpenline, locationWithoutAddressDtls.Source)
 	require.Equal(t, "", *locationWithoutAddressDtls.Country)
 	require.Equal(t, "", *locationWithoutAddressDtls.Region)
 	require.Equal(t, "", *locationWithoutAddressDtls.Locality)
@@ -1170,9 +1179,7 @@ func TestQueryResolver_Contact_WithTimelineEventsTotalCount(t *testing.T) {
 	require.Equal(t, 2, neo4jt.GetCountOfNodes(ctx, driver, "InteractionEvent"))
 	require.Equal(t, 10, neo4jt.GetCountOfNodes(ctx, driver, "TimelineEvent"))
 
-	rawResponse, err := c.RawPost(getQuery("contact/get_contact_with_timeline_events_total_count"),
-		client.Var("contactId", contactId))
-	assertRawResponseSuccess(t, rawResponse, err)
+	rawResponse := callGraphQL(t, "contact/get_contact_with_timeline_events_total_count", map[string]interface{}{"contactId": contactId})
 
 	contact := rawResponse.Data.(map[string]interface{})["contact"]
 	require.Equal(t, contactId, contact.(map[string]interface{})["id"])
@@ -1199,18 +1206,14 @@ func TestQueryResolver_Contact_WithOrganizations_ById(t *testing.T) {
 	require.Equal(t, 4, neo4jt.GetCountOfRelationships(ctx, driver, "WORKS_AS"))
 	require.Equal(t, 4, neo4jt.GetCountOfRelationships(ctx, driver, "ROLE_IN"))
 
-	rawResponse, err := c.RawPost(getQuery("contact/get_contact_with_organizations_by_id"),
-		client.Var("contactId", contactId),
-		client.Var("limit", 2),
-		client.Var("page", 1),
-	)
-	assertRawResponseSuccess(t, rawResponse, err)
+	rawResponse := callGraphQL(t, "contact/get_contact_with_organizations_by_id",
+		map[string]interface{}{"contactId": contactId, "limit": 2, "page": 1})
 
 	var searchedContact struct {
 		Contact model.Contact
 	}
 
-	err = decode.Decode(rawResponse.Data.(map[string]any), &searchedContact)
+	err := decode.Decode(rawResponse.Data.(map[string]any), &searchedContact)
 	require.Nil(t, err)
 	require.Equal(t, contactId, searchedContact.Contact.ID)
 	require.Equal(t, 2, searchedContact.Contact.Organizations.TotalPages)
@@ -1231,18 +1234,15 @@ func TestMutationResolver_ContactAddTagByID(t *testing.T) {
 	tagId1 := neo4jt.CreateTag(ctx, driver, tenantName, "tag1")
 	tagId2 := neo4jt.CreateTag(ctx, driver, tenantName, "tag2")
 	neo4jt.TagContact(ctx, driver, contactId, tagId1)
+	time.Sleep(100 * time.Millisecond)
 
-	rawResponse, err := c.RawPost(getQuery("contact/add_tag_to_contact"),
-		client.Var("contactId", contactId),
-		client.Var("tagId", tagId2),
-	)
-	assertRawResponseSuccess(t, rawResponse, err)
+	rawResponse := callGraphQL(t, "contact/add_tag_to_contact", map[string]interface{}{"contactId": contactId, "tagId": tagId2})
 
 	var contactStruct struct {
 		Contact_AddTagById model.Contact
 	}
 
-	err = decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
+	err := decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
 	require.Nil(t, err)
 	require.NotNil(t, contactStruct)
 	tags := contactStruct.Contact_AddTagById.Tags
@@ -1272,17 +1272,13 @@ func TestMutationResolver_ContactRemoveTagByID(t *testing.T) {
 
 	require.Equal(t, 2, neo4jt.GetCountOfRelationships(ctx, driver, "TAGGED"))
 
-	rawResponse, err := c.RawPost(getQuery("contact/remove_tag_from_contact"),
-		client.Var("contactId", contactId),
-		client.Var("tagId", tagId2),
-	)
-	assertRawResponseSuccess(t, rawResponse, err)
+	rawResponse := callGraphQL(t, "contact/remove_tag_from_contact", map[string]interface{}{"contactId": contactId, "tagId": tagId2})
 
 	var contactStruct struct {
 		Contact_RemoveTagById model.Contact
 	}
 
-	err = decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
+	err := decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
 	require.Nil(t, err)
 	require.NotNil(t, contactStruct)
 	tags := contactStruct.Contact_RemoveTagById.Tags
@@ -1307,17 +1303,13 @@ func TestMutationResolver_ContactAddOrganizationByID(t *testing.T) {
 	orgId2 := neo4jt.CreateOrganization(ctx, driver, tenantName, "org2")
 	neo4jt.LinkContactWithOrganization(ctx, driver, contactId, orgId1)
 
-	rawResponse, err := c.RawPost(getQuery("contact/add_organization_to_contact"),
-		client.Var("contactId", contactId),
-		client.Var("organizationId", orgId2),
-	)
-	assertRawResponseSuccess(t, rawResponse, err)
+	rawResponse := callGraphQL(t, "contact/add_organization_to_contact", map[string]interface{}{"contactId": contactId, "organizationId": orgId2})
 
 	var contactStruct struct {
 		Contact_AddOrganizationById model.Contact
 	}
 
-	err = decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
+	err := decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
 	require.Nil(t, err)
 	require.NotNil(t, contactStruct)
 	organizations := contactStruct.Contact_AddOrganizationById.Organizations.Content
@@ -1347,17 +1339,13 @@ func TestMutationResolver_ContactRemoveOrganizationByID(t *testing.T) {
 	require.Equal(t, 2, neo4jt.GetCountOfRelationships(ctx, driver, "WORKS_AS"))
 	require.Equal(t, 2, neo4jt.GetCountOfRelationships(ctx, driver, "ROLE_IN"))
 
-	rawResponse, err := c.RawPost(getQuery("contact/remove_organization_from_contact"),
-		client.Var("contactId", contactId),
-		client.Var("organizationId", orgId2),
-	)
-	assertRawResponseSuccess(t, rawResponse, err)
+	rawResponse := callGraphQL(t, "contact/remove_organization_from_contact", map[string]interface{}{"contactId": contactId, "organizationId": orgId2})
 
 	var contactStruct struct {
 		Contact_RemoveOrganizationById model.Contact
 	}
 
-	err = decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
+	err := decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
 	require.Nil(t, err)
 	require.NotNil(t, contactStruct)
 	organizations := contactStruct.Contact_RemoveOrganizationById.Organizations.Content
@@ -1372,4 +1360,118 @@ func TestMutationResolver_ContactRemoveOrganizationByID(t *testing.T) {
 	require.Equal(t, 2, neo4jt.GetCountOfNodes(ctx, driver, "Organization"))
 	require.Equal(t, 1, neo4jt.GetCountOfRelationships(ctx, driver, "WORKS_AS"))
 	require.Equal(t, 1, neo4jt.GetCountOfRelationships(ctx, driver, "ROLE_IN"))
+}
+
+func TestMutationResolver_ContactAddNewLocation(t *testing.T) {
+	ctx := context.TODO()
+	defer tearDownTestCase(ctx)(t)
+	neo4jt.CreateTenant(ctx, driver, tenantName)
+
+	contactId := neo4jt.CreateDefaultContact(ctx, driver, tenantName)
+
+	rawResponse := callGraphQL(t, "contact/add_new_location_to_contact", map[string]interface{}{"contactId": contactId})
+
+	var locationStruct struct {
+		Contact_AddNewLocation model.Location
+	}
+
+	err := decode.Decode(rawResponse.Data.(map[string]any), &locationStruct)
+	require.Nil(t, err)
+	require.NotNil(t, locationStruct)
+	location := locationStruct.Contact_AddNewLocation
+	require.NotNil(t, location.ID)
+	require.NotNil(t, location.CreatedAt)
+	require.NotNil(t, location.UpdatedAt)
+	require.Equal(t, constants.AppSourceCustomerOsApi, location.AppSource)
+	require.Equal(t, model.DataSourceOpenline, location.Source)
+	require.Equal(t, model.DataSourceOpenline, location.SourceOfTruth)
+
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Contact"))
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Location"))
+	require.Equal(t, 1, neo4jt.GetCountOfRelationships(ctx, driver, "ASSOCIATED_WITH"))
+	require.Equal(t, 1, neo4jt.GetCountOfRelationships(ctx, driver, "LOCATION_BELONGS_TO_TENANT"))
+	assertNeo4jLabels(ctx, t, driver, []string{"Tenant", "Location", "Location_" + tenantName, "Contact", "Contact_" + tenantName})
+}
+
+func TestMutationResolver_ContactAddSocial(t *testing.T) {
+	ctx := context.TODO()
+	defer tearDownTestCase(ctx)(t)
+	neo4jt.CreateTenant(ctx, driver, tenantName)
+
+	contactId := neo4jt.CreateDefaultContact(ctx, driver, tenantName)
+
+	rawResponse := callGraphQL(t, "contact/add_social_to_contact", map[string]interface{}{"contactId": contactId})
+
+	var socialStruct struct {
+		Contact_AddSocial model.Social
+	}
+
+	err := decode.Decode(rawResponse.Data.(map[string]any), &socialStruct)
+	require.Nil(t, err)
+	require.NotNil(t, socialStruct)
+	social := socialStruct.Contact_AddSocial
+	require.NotNil(t, social.ID)
+	require.NotNil(t, social.CreatedAt)
+	require.NotNil(t, social.UpdatedAt)
+	test.AssertTimeRecentlyChanged(t, social.CreatedAt)
+	test.AssertTimeRecentlyChanged(t, social.UpdatedAt)
+	require.Equal(t, constants.AppSourceCustomerOsApi, social.AppSource)
+	require.Equal(t, model.DataSourceOpenline, social.Source)
+	require.Equal(t, model.DataSourceOpenline, social.SourceOfTruth)
+	require.Equal(t, "social url", social.URL)
+	require.Equal(t, "social platform", *social.PlatformName)
+
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Contact"))
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Social"))
+	require.Equal(t, 1, neo4jt.GetCountOfRelationships(ctx, driver, "HAS"))
+	assertNeo4jLabels(ctx, t, driver, []string{"Tenant", "Social", "Social_" + tenantName, "Contact", "Contact_" + tenantName})
+}
+
+func TestQueryResolver_Contact_WithSocials(t *testing.T) {
+	ctx := context.TODO()
+	defer tearDownTestCase(ctx)(t)
+	neo4jt.CreateTenant(ctx, driver, tenantName)
+	contactId := neo4jt.CreateDefaultContact(ctx, driver, tenantName)
+
+	socialId1 := neo4jt.CreateSocial(ctx, driver, tenantName, entity.SocialEntity{
+		PlatformName: "p1",
+		Url:          "url1",
+	})
+	socialId2 := neo4jt.CreateSocial(ctx, driver, tenantName, entity.SocialEntity{
+		PlatformName: "p2",
+		Url:          "url2",
+	})
+	neo4jt.LinkSocialWithEntity(ctx, driver, contactId, socialId1)
+	neo4jt.LinkSocialWithEntity(ctx, driver, contactId, socialId2)
+
+	require.Equal(t, 1, neo4jt.GetCountOfNodes(ctx, driver, "Contact"))
+	require.Equal(t, 2, neo4jt.GetCountOfNodes(ctx, driver, "Social"))
+	require.Equal(t, 2, neo4jt.GetCountOfRelationships(ctx, driver, "HAS"))
+
+	rawResponse := callGraphQL(t, "contact/get_contact_with_socials", map[string]interface{}{"contactId": contactId})
+
+	var contactStruct struct {
+		Contact model.Contact
+	}
+
+	err := decode.Decode(rawResponse.Data.(map[string]any), &contactStruct)
+	require.Nil(t, err)
+
+	contact := contactStruct.Contact
+	require.NotNil(t, contact)
+	require.Equal(t, 2, len(contact.Socials))
+
+	require.Equal(t, socialId1, contact.Socials[0].ID)
+	require.Equal(t, "p1", *contact.Socials[0].PlatformName)
+	require.Equal(t, "url1", contact.Socials[0].URL)
+	require.NotNil(t, contact.Socials[0].CreatedAt)
+	require.NotNil(t, contact.Socials[0].UpdatedAt)
+	require.Equal(t, "test", contact.Socials[0].AppSource)
+
+	require.Equal(t, socialId2, contact.Socials[1].ID)
+	require.Equal(t, "p2", *contact.Socials[1].PlatformName)
+	require.Equal(t, "url2", contact.Socials[1].URL)
+	require.NotNil(t, contact.Socials[1].CreatedAt)
+	require.NotNil(t, contact.Socials[1].UpdatedAt)
+	require.Equal(t, "test", contact.Socials[1].AppSource)
 }
