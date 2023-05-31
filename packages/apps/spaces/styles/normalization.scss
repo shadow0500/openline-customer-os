@@ -5,8 +5,7 @@ html {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
-  font-family: 'Roboto', BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu,
-    Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  font-family: Barlow-Regular, Roboto-Regular, BlinkMacSystemFont, Segoe UI, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
 *,
@@ -25,8 +24,7 @@ body,
 #__next,
 .global_container {
   font-size: 16px;
-  font-family: Roboto, BlinkMacSystemFont, 'Segoe UI', Oxygen-Sans, Ubuntu,
-    Cantarell, 'Helvetica Neue', sans-serif;
+  font-family: Barlow-Regular, Roboto-Regular, BlinkMacSystemFont, Segoe UI, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 
   line-height: 1.5;
   height: 100%;
