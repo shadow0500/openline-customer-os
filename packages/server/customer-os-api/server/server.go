@@ -104,6 +104,11 @@ func (server *server) Run(parentCtx context.Context) error {
 		commonService.TenantUserContextEnhancer(ctx, commonService.USERNAME_OR_TENANT, commonServices.CommonRepositories),
 		commonService.ApiKeyCheckerHTTP(commonServices.CommonRepositories.AppKeyRepository, commonService.CUSTOMER_OS_API),
 		server.graphqlHandler(grpcContainer, serviceContainer))
+	r.POST("/m2m/query",
+		cosHandler.TracingEnhancer(ctx, "/query"),
+		commonService.TenantUserContextEnhancer(ctx, commonService.TENANT, commonServices.CommonRepositories),
+		commonService.ApiKeyCheckerHTTP(commonServices.CommonRepositories.AppKeyRepository, commonService.CUSTOMER_OS_API),
+		server.graphqlHandler(grpcContainer, serviceContainer))
 	if server.cfg.GraphQL.PlaygroundEnabled {
 		r.GET("/",
 			playgroundHandler())
