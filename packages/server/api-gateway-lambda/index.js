@@ -1,8 +1,9 @@
-import axios from 'axios';
-import { Client } from 'pg';
+const axios = require('axios');
+const { Client } = require('pg');
 
-export const handler = async(event) => {
+exports.handler = async(event) => {
     try {
+        console.log('Event:', JSON.stringify(event));
         // Retrieve RDS connection configuration from environment variables
         const rdsConfig = {
             host: process.env.RDS_HOST,
@@ -19,10 +20,11 @@ export const handler = async(event) => {
         const client = new Client(rdsConfig);
 
         // Connect to the PostgreSQL database
+        console.log('Connecting to PostgreSQL database...')
         await client.connect();
 
-        // Query the tenantkeys table based on the tenantKey
-        const query = `SELECT tenant, key, active FROM tenant_keys WHERE tenant = $1`;
+        // Query the tenant_keys table based on the tenantKey
+        const query = `SELECT tenant, key, active FROM tenant_keys WHERE key = $1`;
         const result = await client.query(query, [tenantKey]);
         const rows = result.rows;
 
@@ -34,12 +36,14 @@ export const handler = async(event) => {
 
             // Prepare the request to the targetAPI
             const targetAPIUrl = process.env.TARGET_API_URL;
+
             const headers = {
                 'X-OPENLINE-TENANT': tenant,
-                'X-OPENLINE-KEY': tenantKey
+                'X-OPENLINE-KEY': ''
             };
 
             // Make a POST request to the targetAPI
+            console.log('Calling target API...')
             const response = await axios.post(targetAPIUrl, event.body, { headers });
 
             // Log the response from the targetAPI
