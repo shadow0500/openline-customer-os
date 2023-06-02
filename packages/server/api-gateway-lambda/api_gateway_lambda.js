@@ -41,7 +41,7 @@ export const handler = async(event) => {
             };
 
             // Make a POST request to the targetAPI
-            const response = await axios.post(targetAPIUrl, {}, { headers });
+            const response = await axios.post(targetAPIUrl, event.body, { headers });
 
             // Log the response from the targetAPI
             console.log('Response from targetAPI:', response.data);
