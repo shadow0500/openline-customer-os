@@ -1,5 +1,5 @@
-const axios = require('axios');
-const { Client } = require('pg');
+import axios from 'axios';
+import { Client } from 'pg';
 
 export const handler = async(event) => {
     try {
