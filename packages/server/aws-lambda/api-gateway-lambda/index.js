@@ -1,4 +1,4 @@
-const axios = require('axios');
+const http = require('https');
 const { Client } = require('pg');
 
 exports.handler = async(event) => {
@@ -14,7 +14,7 @@ exports.handler = async(event) => {
         };
 
         // Read the X-OPENLINE-TENANT-KEY header from the event
-        const tenantKey = event.headers['X-OPENLINE-TENANT-KEY'];
+        const tenantKey = event.headers['x-openline-tenant-key'];
 
         // Create PostgreSQL client
         const client = new Client(rdsConfig);
@@ -38,12 +38,12 @@ exports.handler = async(event) => {
             const targetAPIUrl = process.env.TARGET_API_URL;
 
             const headers = {
-                'X-OPENLINE-TENANT': tenant,
-                'X-OPENLINE-KEY': ''
+                'X-openline-TENANT': tenant,
+                'X-openline-API-KEY': process.env.X_Openline_API_KEY
             };
 
             // Make a POST request to the targetAPI
-            console.log('Calling target API...')
+            console.log('Calling target API...'+ targetAPIUrl)
             const response = await axios.post(targetAPIUrl, event.body, { headers });
 
             // Log the response from the targetAPI

@@ -1,5 +1,6 @@
 
 docker build -t api-gateway-lambda .
+docker build --platform=linux/amd64 -t api-gateway-lambda .
 docker tag api-gateway-lambda:latest 769325097132.dkr.ecr.eu-west-2.amazonaws.com/api-gateway-lambda:latest
 docker push 769325097132.dkr.ecr.eu-west-2.amazonaws.com/api-gateway-lambda:latest
 
