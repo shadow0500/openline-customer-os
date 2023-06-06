@@ -1,16 +1,22 @@
-const http = require('https');
+const https = require('https');
 const { Client } = require('pg');
 
-exports.handler = async(event) => {
+exports.handler = async (event) => {
     try {
         console.log('Event:', JSON.stringify(event));
+        if (!event.body) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Invalid request body' }),
+            };
+        }
         // Retrieve RDS connection configuration from environment variables
         const rdsConfig = {
             host: process.env.RDS_HOST,
             port: process.env.RDS_PORT,
             user: process.env.RDS_USERNAME,
             password: process.env.RDS_PASSWORD,
-            database: process.env.RDS_DATABASE
+            database: process.env.RDS_DATABASE,
         };
 
         // Read the X-OPENLINE-TENANT-KEY header from the event
@@ -20,7 +26,7 @@ exports.handler = async(event) => {
         const client = new Client(rdsConfig);
 
         // Connect to the PostgreSQL database
-        console.log('Connecting to PostgreSQL database...')
+        console.log('Connecting to PostgreSQL database...');
         await client.connect();
 
         // Query the tenant_keys table based on the tenantKey
@@ -39,24 +45,56 @@ exports.handler = async(event) => {
 
             const headers = {
                 'X-openline-TENANT': tenant,
-                'X-openline-API-KEY': process.env.X_Openline_API_KEY
+                'X-openline-API-KEY': process.env.X_Openline_API_KEY,
             };
 
             // Make a POST request to the targetAPI
-            console.log('Calling target API...'+ targetAPIUrl)
-            const response = await axios.post(targetAPIUrl, event.body, { headers });
+            console.log('Calling target API...' + targetAPIUrl);
+
+            const options = {
+                method: 'POST',
+                headers: {
+                    ...headers,
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(event.body),
+                },
+            };
+
+            const response = await new Promise((resolve, reject) => {
+                const req = https.request(targetAPIUrl, options, (res) => {
+                    let data = '';
+
+                    res.on('data', (chunk) => {
+                        data += chunk;
+                    });
+
+                    res.on('end', () => {
+                        resolve({
+                            statusCode: res.statusCode,
+                            body: data,
+                        });
+                    });
+                });
+
+                req.on('error', (error) => {
+                    reject(error);
+                });
+
+                req.write(event.body);
+                req.end();
+            });
 
             // Log the response from the targetAPI
-            console.log('Response from targetAPI:', response.data);
+            console.log('Response from targetAPI:', response.body);
 
             return {
-                statusCode: 200,
-                body: JSON.stringify(response.data)
+                statusCode: response.statusCode,
+                body: JSON.stringify(response.body),
             };
         } else {
             return {
                 statusCode: 404,
-                body: JSON.stringify({ error: 'Tenant key not found' })
+                body: JSON.stringify({ error: 'Tenant key not found' }),
             };
         }
     } catch (error) {
@@ -64,7 +102,7 @@ exports.handler = async(event) => {
 
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Internal Server Error' })
+            body: JSON.stringify({ error: 'Internal Server Error' }),
         };
     }
 };
